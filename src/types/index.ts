@@ -5,3 +5,4 @@ export * from "./conversation.types";
 export * from "./upload.types";
 export * from "./socket.types";
 export * from "./call.types";
+export * from "./notification.types";

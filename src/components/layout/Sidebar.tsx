@@ -1,11 +1,9 @@
-import {Plus,Search} from "lucide-react";
-import {useState} from "react";
-import {ConversationList} from "../chat/ConversationList";
-import {SearchPanel} from "../chat/SearchPanel";
-import {SidebarNav} from "./SidebarNav";
-
-
-
+import { Plus, Search } from "lucide-react";
+import { useState } from "react";
+import { ConversationList } from "../chat/ConversationList";
+import { SearchPanel } from "../chat/SearchPanel";
+import { SidebarNav } from "./SidebarNav";
+import { NotificationPermissionButton } from "../notifications/NotificationPermissionButton";
 
 interface SidebarProps {
   selectedConversationId?: string;
@@ -24,14 +22,18 @@ export function Sidebar({ selectedConversationId }: SidebarProps) {
           <header className="flex shrink-0 items-center justify-between border-b border-[#273244] px-4 py-5 md:px-6">
             <h1 className="text-3xl font-bold tracking-tight">Chats</h1>
 
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#8b5cf6] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7c3aed] active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Chat</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationPermissionButton />
+
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#8b5cf6] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7c3aed] active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Chat</span>
+              </button>
+            </div>
           </header>
 
           <div className="shrink-0 border-b border-[#273244] px-4 py-4 md:px-6">
@@ -56,10 +58,7 @@ export function Sidebar({ selectedConversationId }: SidebarProps) {
         </div>
       </div>
 
-      <SearchPanel
-        open={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
+      <SearchPanel open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }

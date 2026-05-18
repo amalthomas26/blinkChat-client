@@ -24,6 +24,16 @@ import type {
   ConversationListItemDto,
 } from "../types";
 
+import { AppNotificationKind } from "../types";
+import { useNotificationStore } from "../store/notification.store";
+import { dispatchAppNotification } from "../lib/notificationDispatcher";
+import {
+  getIncomingCallNotificationContent,
+  getMessageNotificationContent,
+  getMissedCallNotificationContent,
+} from "../lib/notificationContent";
+import { shouldNotifyForMessage } from "../lib/notificationRules";
+
 function isMessageAfterCursor(
   messageId: string,
   lastSeenMessageId: string | null,
@@ -60,6 +70,10 @@ export const useSocket = () => {
     const socket = socketService.connect(accessToken);
 
     const handleReceiveMessage = async (msg: MessageDto) => {
+      const sourceKey = `message:${msg._id}`;
+      const notificationStore = useNotificationStore.getState();
+      const alreadySeen = notificationStore.hasSeenSource(sourceKey);
+
       useMessageStore.getState().addMessage(msg);
 
       const conversationStore = useConversationStore.getState();
@@ -75,8 +89,10 @@ export const useSocket = () => {
           return;
         }
       }
+      const latestConversationStore = useConversationStore.getState();
+      const conversation = latestConversationStore.byId[msg.conversationId];
 
-      useConversationStore.getState().updateLastMessage(msg.conversationId, {
+      latestConversationStore.updateLastMessage(msg.conversationId, {
         id: msg._id,
         senderId: msg.senderId,
         type: msg.type,
@@ -89,10 +105,37 @@ export const useSocket = () => {
       });
 
       if (msg.senderId !== currentUserId) {
-        useConversationStore
-          .getState()
-          .incrementUnreadCount(msg.conversationId);
+        latestConversationStore.incrementUnreadCount(msg.conversationId);
       }
+
+      if (alreadySeen) return;
+
+      if (
+        shouldNotifyForMessage({
+          message: msg,
+          conversation,
+          currentUserId,
+          activeConversationId: notificationStore.activeConversationId,
+        })
+      ) {
+        const content = getMessageNotificationContent({
+          message: msg,
+          conversation,
+        });
+
+        if (content) {
+          dispatchAppNotification({
+            kind: AppNotificationKind.NEW_MESSAGE,
+            title: content.title,
+            body: content.body,
+            route: `/chat/${msg.conversationId}`,
+            conversationId: msg.conversationId,
+            messageId: msg._id,
+          });
+        }
+      }
+
+      notificationStore.markSourceSeen(sourceKey);
     };
 
     const handleMessageDeleted = (payload: MessageDeletedPayload) => {
@@ -198,10 +241,7 @@ export const useSocket = () => {
     };
 
     const handleCallIncoming = (payload: CallIncomingPayload) => {
-      console.log("[call:incoming] received:", payload.callId, "from:", payload.callerName, "current phase:", useCallStore.getState().phase);
-      
-      const phase = useCallStore.getState().phase;
-      if (phase !== "idle") return; // Let store ignore it
+      const beforePhase = useCallStore.getState().phase;
 
       useCallStore.getState().receiveIncomingCall({
         callId: payload.callId,
@@ -211,13 +251,28 @@ export const useSocket = () => {
         callType: payload.callType,
       });
 
-      // Acknowledge to the server that we are ringing
-      socket.emit("call:ringing", { 
-        callId: payload.callId, 
-        callerId: payload.callerId 
+      const afterState = useCallStore.getState();
+      const wasAcceptedIntoState =
+        beforePhase === "idle" && afterState.phase === "incoming_ringing";
+
+      if (!wasAcceptedIntoState) return;
+
+      const sourceKey = `call:incoming:${payload.callId}`;
+      const notificationStore = useNotificationStore.getState();
+      if (notificationStore.hasSeenSource(sourceKey)) return;
+
+      const content = getIncomingCallNotificationContent(payload);
+
+      dispatchAppNotification({
+        kind: AppNotificationKind.INCOMING_CALL,
+        title: content.title,
+        body: content.body,
+        route: "/chat",
+        callId: payload.callId,
+        avatarUrl: payload.callerAvatar,
       });
 
-      console.log("[call:incoming] phase after:", useCallStore.getState().phase);
+      notificationStore.markSourceSeen(sourceKey);
     };
 
     const handleCallRinging = (_payload: { callId: string }) => {
@@ -230,11 +285,6 @@ export const useSocket = () => {
 
     const handleCallRejected = () => {
       useCallStore.getState().endCall("Call rejected");
-      window.dispatchEvent(new CustomEvent("call:cleanup"));
-    };
-
-    const handleCallEnded = (payload: CallEndedPayload) => {
-      useCallStore.getState().endCall(payload.reason);
       window.dispatchEvent(new CustomEvent("call:cleanup"));
     };
 
@@ -251,6 +301,36 @@ export const useSocket = () => {
       window.dispatchEvent(
         new CustomEvent("webrtc:offer", { detail: payload }),
       );
+    };
+    const handleCallEnded = (payload: CallEndedPayload) => {
+      const callState = useCallStore.getState();
+      const shouldNotifyMissedCall =
+        payload.reason === "missed" && callState.direction === "incoming";
+
+      if (shouldNotifyMissedCall) {
+        const sourceKey = `call:missed:${payload.callId}`;
+        const notificationStore = useNotificationStore.getState();
+
+        if (!notificationStore.hasSeenSource(sourceKey)) {
+          const content = getMissedCallNotificationContent({
+            peerName: callState.peerName,
+            callType: callState.callType,
+          });
+
+          dispatchAppNotification({
+            kind: AppNotificationKind.MISSED_CALL,
+            title: content.title,
+            body: content.body,
+            route: "/calls",
+            callId: payload.callId,
+          });
+
+          notificationStore.markSourceSeen(sourceKey);
+        }
+      }
+
+      useCallStore.getState().endCall(payload.reason);
+      window.dispatchEvent(new CustomEvent("call:cleanup"));
     };
 
     const handleWebRTCAnswer = (payload: WebRTCAnswerPayload) => {

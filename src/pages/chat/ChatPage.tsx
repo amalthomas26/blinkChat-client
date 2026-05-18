@@ -25,6 +25,9 @@ import { messageService } from "../../services/message.service";
 import { socketService } from "../../services/socket.service";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
 import { ImageViewer } from "../../components/chat/ImageViewer";
+import {useActiveConversationNotification} from "../../hooks/useActiveConversationNotification";
+
+
 
 interface ThreadShellProps {
   conversationId?: string;
@@ -46,6 +49,8 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
 
   const replyToMessage = useMessage(replyToId ?? "");
   const selectedMessage = useMessage(contextMenu?.messageId ?? "");
+
+  useActiveConversationNotification(conversationId);
 
   const { isJoined, joinError } = useConversationRoom(conversationId);
 

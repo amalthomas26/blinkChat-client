@@ -11,6 +11,8 @@ import { useCallPhase } from "./store/call.selectors";
 // where the webrtc:offer CustomEvent fired before the chunk loaded.
 import { CallOverlay } from "./components/call/CallOverlay";
 import { IncomingCallDialog } from "./components/call/IncomingCallDialog";
+import { useNotificationNavigation } from "./hooks/useNotificationNavigation";
+import { NotificationToaster } from "./components/notifications/NotificationToaster";
 
 // Lazy-loaded pages
 const LoginPage = lazy(() =>
@@ -38,6 +40,7 @@ function PageLoader() {
 
 export default function App() {
   useSocket();
+  useNotificationNavigation();
 
   const phase = useCallPhase();
   const showIncoming = phase === "incoming_ringing";
@@ -66,7 +69,7 @@ export default function App() {
         </Routes>
       </Suspense>
 
-      {/* Call UI — rendered at root level, above all routes */}
+      <NotificationToaster />
       {showIncoming ? <IncomingCallDialog /> : null}
       {showOverlay ? <CallOverlay /> : null}
     </>
