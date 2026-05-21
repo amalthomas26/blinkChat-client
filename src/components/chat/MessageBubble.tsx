@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, useCallback, useEffect } from "react";
 import { Check, CheckCheck, RotateCcw } from "lucide-react";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
+import type { ConversationListUserDto } from "../../types";
 import { MessageType } from "../../types";
 import { cn } from "../../lib/utils";
 import { formatMessageTime } from "../../lib/date";
@@ -10,12 +11,17 @@ import { VideoMessage } from "./VideoMessage";
 import { FileMessage } from "./FileMessage";
 import { CallMessage } from "./CallMessage";
 
+const MAX_VISIBLE_REACTIONS = 5;
+
 interface MessageBubbleProps {
   message: MessageDto | OptimisticMessageDto;
   isOwn: boolean;
   isRead: boolean;
+  currentUserId: string | null;
+  participants: ConversationListUserDto[];
   onRetry: (message: OptimisticMessageDto) => void;
   onContextMenuOpen: (messageId: string, x: number, y: number) => void;
+  onReactionToggle: (messageId: string, emoji: string) => void;
   onImageClick?: (src: string) => void;
 }
 
@@ -138,8 +144,11 @@ function MessageBubbleComponent({
   message,
   isOwn,
   isRead,
+  currentUserId,
+  participants,
   onRetry,
   onContextMenuOpen,
+  onReactionToggle,
   onImageClick,
 }: MessageBubbleProps) {
   // Call log messages render as centered system items, not bubbles
@@ -151,15 +160,34 @@ function MessageBubbleComponent({
     );
   }
 
+  // Build grouped reactions: emoji → { count, reactorIds }
   const groupedReactions = useMemo(() => {
-    const counts = new Map<string, number>();
+    const groups = new Map<string, { count: number; reactorIds: string[] }>();
 
     for (const reaction of message.reactions ?? []) {
-      counts.set(reaction.emoji, (counts.get(reaction.emoji) ?? 0) + 1);
+      const existing = groups.get(reaction.emoji);
+      if (existing) {
+        existing.count += 1;
+        existing.reactorIds.push(reaction.userId);
+      } else {
+        groups.set(reaction.emoji, { count: 1, reactorIds: [reaction.userId] });
+      }
     }
 
-    return Array.from(counts.entries());
+    return Array.from(groups.entries()); // [emoji, { count, reactorIds }][]
   }, [message.reactions]);
+
+  // Build a userId → name lookup from participants for tooltips
+  const participantMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of participants) {
+      map.set(p.id, p.name);
+    }
+    return map;
+  }, [participants]);
+
+  const visibleReactions = groupedReactions.slice(0, MAX_VISIBLE_REACTIONS);
+  const overflowCount = groupedReactions.length - visibleReactions.length;
 
   const failed = isOptimisticMessage(message) && message.status === "failed";
 
@@ -205,16 +233,64 @@ function MessageBubbleComponent({
           ) : null}
         </div>
 
-        {groupedReactions.length > 0 ? (
+        {visibleReactions.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-1">
-            {groupedReactions.map(([emoji, count]) => (
-              <span
-                key={emoji}
-                className="rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-xs"
-              >
-                {emoji} {count}
+            {visibleReactions.map(([emoji, { count, reactorIds }]) => {
+              const isMine = currentUserId
+                ? reactorIds.includes(currentUserId)
+                : false;
+
+              // Build tooltip text: "You, Alice, Bob" (cap at 5 names)
+              const names = reactorIds
+                .slice(0, 5)
+                .map((uid) =>
+                  uid === currentUserId
+                    ? "You"
+                    : (participantMap.get(uid) ?? "Unknown"),
+                );
+              const tooltipText =
+                names.join(", ") +
+                (reactorIds.length > 5
+                  ? ` +${reactorIds.length - 5} more`
+                  : "");
+
+              return (
+                <div key={emoji} className="group/reaction relative">
+                  <button
+                    type="button"
+                    onClick={() => onReactionToggle(message._id, emoji)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
+                      isMine
+                        ? "border-[#8b5cf6] bg-[#2a1f4e] text-white hover:bg-[#351f6e]"
+                        : "border-white/10 bg-black/20 text-white hover:border-white/30 hover:bg-black/40",
+                    )}
+                    title={tooltipText}
+                  >
+                    <span>{emoji}</span>
+                    <span className="font-medium tabular-nums">{count}</span>
+                  </button>
+
+                  {/* Hover tooltip showing reactor names */}
+                  <div
+                    className={cn(
+                      "pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-[#273244] bg-[#151b2b] px-2.5 py-1.5 text-xs text-slate-200 shadow-xl",
+                      "opacity-0 transition-opacity duration-150 group-hover/reaction:opacity-100",
+                    )}
+                  >
+                    {tooltipText}
+                    {/* Tooltip arrow */}
+                    <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#273244]" />
+                  </div>
+                </div>
+              );
+            })}
+
+            {overflowCount > 0 ? (
+              <span className="flex items-center rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-xs text-slate-400">
+                +{overflowCount} more
               </span>
-            ))}
+            ) : null}
           </div>
         ) : null}
 
@@ -234,3 +310,4 @@ function MessageBubbleComponent({
 }
 
 export const MessageBubble = memo(MessageBubbleComponent);
+

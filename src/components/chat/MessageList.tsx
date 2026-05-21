@@ -12,9 +12,12 @@ import {
 } from "../../store/message.selectors";
 import { useMessageStore } from "../../store/message.store";
 
+import type { ConversationListUserDto } from "../../types";
+
 interface MessageListProps {
   conversationId: string;
   currentUserId: string | null;
+  participants: ConversationListUserDto[];
   typingLabel: string | null;
   hasMore: boolean;
   isLoading: boolean;
@@ -23,23 +26,28 @@ interface MessageListProps {
   onContextMenuOpen: (messageId: string, x: number, y: number) => void;
   onAtBottomChange: (isAtBottom: boolean) => void;
   onMarkRead: () => void;
-  onImageClick?:(src:string)=>void;
+  onReactionToggle: (messageId: string, emoji: string) => void;
+  onImageClick?: (src: string) => void;
 }
 
 function MessageRow({
   messageId,
   currentUserId,
+  participants,
   readCursor,
   onRetry,
   onContextMenuOpen,
+  onReactionToggle,
   onImageClick,
 }: {
   messageId: string;
   currentUserId: string | null;
+  participants: ConversationListUserDto[];
   readCursor: string | null;
   onRetry: (message: OptimisticMessageDto) => void;
   onContextMenuOpen: (messageId: string, x: number, y: number) => void;
-  onImageClick?:(src:string)=>void;
+  onReactionToggle: (messageId: string, emoji: string) => void;
+  onImageClick?: (src: string) => void;
 }) {
   const message = useMessage(messageId);
 
@@ -53,8 +61,11 @@ function MessageRow({
       message={message}
       isOwn={isOwn}
       isRead={isRead}
+      currentUserId={currentUserId}
+      participants={participants}
       onRetry={onRetry}
       onContextMenuOpen={onContextMenuOpen}
+      onReactionToggle={onReactionToggle}
       onImageClick={onImageClick}
     />
   );
@@ -63,6 +74,7 @@ function MessageRow({
 export function MessageList({
   conversationId,
   currentUserId,
+  participants,
   typingLabel,
   hasMore,
   isLoading,
@@ -71,6 +83,7 @@ export function MessageList({
   onContextMenuOpen,
   onAtBottomChange,
   onMarkRead,
+  onReactionToggle,
   onImageClick,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -195,9 +208,11 @@ export function MessageList({
                   <MessageRow
                     messageId={row.messageId}
                     currentUserId={currentUserId}
+                    participants={participants}
                     readCursor={readCursor}
                     onRetry={onRetry}
                     onContextMenuOpen={onContextMenuOpen}
+                    onReactionToggle={onReactionToggle}
                     onImageClick={onImageClick}
                   />
                 )}

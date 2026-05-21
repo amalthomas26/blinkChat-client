@@ -27,17 +27,12 @@ export function ChatLayout({
         paddingTop: "env(safe-area-inset-top)",
       }}
     >
-      {/* Sidebar — full-width on mobile when no chat is open, fixed-width on desktop */}
       {showSidebar && (
-        <aside
-          className="flex w-full shrink-0 flex-col md:w-[360px] md:max-w-[520px] md:border-r md:border-[#273244]"
-          style={{ height: "100dvh" }}
-        >
+        <aside className="flex w-full shrink-0 flex-col md:w-[360px] md:max-w-[520px] md:border-r md:border-[#273244]">
           {sidebar}
         </aside>
       )}
 
-      {/* Thread panel — takes remaining space on desktop, full-width on mobile */}
       {showThread && (
         <section
           className="flex min-w-0 flex-1 flex-col bg-[#101620]"

@@ -84,48 +84,50 @@ export function ChatHeader({
             <ImageIcon className="h-5 w-5" />
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={() => navigate("/calls")}
-          className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10"
-          title="Call history"
-        >
-          <History className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          className="rounded-xl p-2 hover:bg-white/5"
-          onClick={() => {
-            if (conversation?.peer) {
-              initiateCall(
-                conversation.peer.id,
-                conversation.peer.name,
-                conversation.peer.avatar,
-                "audio",
-              );
-            }
-          }}
-          disabled={conversation?.type !== "direct"}
-        >
-          <Phone className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          className="rounded-xl p-2 hover:bg-white/5"
-          onClick={() => {
-            if (conversation?.peer) {
-              initiateCall(
-                conversation.peer.id,
-                conversation.peer.name,
-                conversation.peer.avatar,
-                "video",
-              );
-            }
-          }}
-          disabled={conversation?.type !== "direct"}
-        >
-          <Video className="h-5 w-5" />
-        </button>
+        {conversation?.type === "direct" && (
+          <>
+            <button
+              type="button"
+              onClick={() => navigate("/calls")}
+              className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10"
+              title="Call history"
+            >
+              <History className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="rounded-xl p-2 hover:bg-white/5"
+              onClick={() => {
+                if (conversation?.peer) {
+                  initiateCall(
+                    conversation.peer.id,
+                    conversation.peer.name,
+                    conversation.peer.avatar,
+                    "audio",
+                  );
+                }
+              }}
+            >
+              <Phone className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="rounded-xl p-2 hover:bg-white/5"
+              onClick={() => {
+                if (conversation?.peer) {
+                  initiateCall(
+                    conversation.peer.id,
+                    conversation.peer.name,
+                    conversation.peer.avatar,
+                    "video",
+                  );
+                }
+              }}
+            >
+              <Video className="h-5 w-5" />
+            </button>
+          </>
+        )}
 
         <button type="button" className="rounded-xl p-2 hover:bg-white/5">
           <MoreVertical className="h-5 w-5" />

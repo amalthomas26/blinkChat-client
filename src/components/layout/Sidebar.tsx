@@ -15,7 +15,7 @@ export function Sidebar({ selectedConversationId }: SidebarProps) {
 
   return (
     <>
-      <div className="flex h-full w-full flex-col bg-[#151b2b] text-white">
+      <div className="flex h-full w-full flex-row bg-[#151b2b] text-white">
         <SidebarNav />
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

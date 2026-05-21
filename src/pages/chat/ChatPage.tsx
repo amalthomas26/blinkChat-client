@@ -21,6 +21,7 @@ import {
   useTypingUsers,
 } from "../../store/conversation.selectors";
 import { useMessage, useMessageActions } from "../../store/message.selectors";
+import { useMessageStore } from "../../store/message.store";
 import { messageService } from "../../services/message.service";
 import { socketService } from "../../services/socket.service";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
@@ -64,7 +65,7 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
   } = useMessages(conversationId);
 
   const { sendMessage } = useSendMessage();
-  const { deleteMessage, addReaction } = useMessageActions();
+  const { deleteMessage, addReaction, removeReaction } = useMessageActions();
   const { updateAfterMessageDelete } = useConversationActions();
 
   const typingLabel = useMemo(() => {
@@ -150,15 +151,27 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
 
     if (action.startsWith("react:") && currentUserId) {
       const emoji = action.split(":")[1];
-      addReaction(selectedMessage._id, currentUserId, emoji);
-      await messageService.addReaction(
-        selectedMessage._id,
-        emoji,
-        selectedMessage.conversationId,
-      );
+      await handleReactionToggle(selectedMessage._id, emoji);
     }
 
     setContextMenu(null);
+  };
+
+  const handleReactionToggle = async (messageId: string, emoji: string) => {
+    if (!currentUserId) return;
+    const msg = useMessageStore.getState().byId[messageId];
+    if (!msg) return;
+    const alreadyReacted = msg.reactions?.some(
+      (r) => r.userId === currentUserId && r.emoji === emoji,
+    );
+
+    if (alreadyReacted) {
+      removeReaction(messageId, currentUserId);
+      await messageService.removeReaction(messageId, msg.conversationId);
+    } else {
+      addReaction(messageId, currentUserId, emoji);
+      await messageService.addReaction(messageId, emoji, msg.conversationId);
+    }
   };
 
   return (
@@ -187,6 +200,7 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
         <MessageList
           conversationId={conversationId}
           currentUserId={currentUserId}
+          participants={conversation?.participants ?? []}
           typingLabel={typingLabel}
           hasMore={hasMore}
           isLoading={isLoading || !isJoined}
@@ -197,11 +211,12 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
           }
           onAtBottomChange={() => undefined}
           onMarkRead={markConversationRead}
+          onReactionToggle={handleReactionToggle}
           onImageClick={(src) => setViewerImageSrc(src)}
         />
       </div>
 
-      {/* pb-16 md:pb-0 keeps composer above the fixed mobile bottom tab bar */}
+      
       <div className="shrink-0 pb-16 md:pb-0">
         <MessageComposer
           conversationId={conversationId}

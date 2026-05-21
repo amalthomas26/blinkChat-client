@@ -182,7 +182,7 @@ export function MessageComposer({
   };
 
   return (
-    <footer className="shrink-0 border-t border-[#273244] bg-[#151b2b] px-4 py-3">
+    <footer className="shrink-0 border-t border-[#273244] bg-[#151b2b] px-2 py-3 md:px-4">
       {replyTo ? (
         <div className="mb-3 flex items-center justify-between rounded-2xl border-l-2 border-[#8b5cf6] bg-[#101620] px-4 py-2">
           <div className="min-w-0">
@@ -252,7 +252,7 @@ export function MessageComposer({
         </div>
       ) : null}
 
-      <div className="relative flex items-center gap-3">
+      <div className="relative flex items-center gap-1 md:gap-3">
         <input
           ref={fileInputRef}
           type="file"
