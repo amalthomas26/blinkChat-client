@@ -54,4 +54,27 @@ export const userService = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+
+  deleteAvatar: () =>
+    apiFetch<{ success: boolean; data: UserProfileDto }>("/users/me/avatar", {
+      method: "DELETE",
+    }),
+
+  deleteAccount: () =>
+    apiFetch<{ success: boolean }>("/users/me", {
+      method: "DELETE",
+    }),
+
+  blockUser: (userId: string) =>
+    apiFetch<{ success: boolean; message: string }>(`/users/${userId}/block`, {
+      method: "POST",
+    }),
+
+  unblockUser: (userId: string) =>
+    apiFetch<{ success: boolean; message: string }>(`/users/${userId}/block`, {
+      method: "DELETE",
+    }),
+
+  getBlockedUsers: () =>
+    apiFetch<{ success: boolean; data: string[] }>("/users/blocked"),
 };

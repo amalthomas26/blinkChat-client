@@ -28,6 +28,7 @@ interface MessageListProps {
   onMarkRead: () => void;
   onReactionToggle: (messageId: string, emoji: string) => void;
   onImageClick?: (src: string) => void;
+  highlightedMessageId?: string | null;
 }
 
 function MessageRow({
@@ -39,6 +40,7 @@ function MessageRow({
   onContextMenuOpen,
   onReactionToggle,
   onImageClick,
+  isHighlighted,
 }: {
   messageId: string;
   currentUserId: string | null;
@@ -48,6 +50,7 @@ function MessageRow({
   onContextMenuOpen: (messageId: string, x: number, y: number) => void;
   onReactionToggle: (messageId: string, emoji: string) => void;
   onImageClick?: (src: string) => void;
+  isHighlighted?: boolean;
 }) {
   const message = useMessage(messageId);
 
@@ -67,6 +70,7 @@ function MessageRow({
       onContextMenuOpen={onContextMenuOpen}
       onReactionToggle={onReactionToggle}
       onImageClick={onImageClick}
+      isHighlighted={isHighlighted}
     />
   );
 }
@@ -85,6 +89,7 @@ export function MessageList({
   onMarkRead,
   onReactionToggle,
   onImageClick,
+  highlightedMessageId,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -135,6 +140,17 @@ export function MessageList({
 
     setShowNewMessages(true);
   }, [isAtBottom, rows.length, scrollToBottom]);
+
+  // Scroll to highlighted message when search result changes
+  useEffect(() => {
+    if (!highlightedMessageId) return;
+    const idx = rows.findIndex(
+      (r) => r.type === "message" && r.messageId === highlightedMessageId,
+    );
+    if (idx >= 0) {
+      virtualizer.scrollToIndex(idx, { align: "center" });
+    }
+  }, [highlightedMessageId, rows, virtualizer]);
 
   const handleScroll = async () => {
     const node = scrollRef.current;
@@ -214,6 +230,7 @@ export function MessageList({
                     onContextMenuOpen={onContextMenuOpen}
                     onReactionToggle={onReactionToggle}
                     onImageClick={onImageClick}
+                    isHighlighted={row.messageId === highlightedMessageId}
                   />
                 )}
               </div>

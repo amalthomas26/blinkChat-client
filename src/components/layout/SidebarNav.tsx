@@ -38,10 +38,16 @@ export function SidebarNav() {
             </button>
           </div>
         </div>
-
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd]">
-          {userInitial}
-        </div>
+        <NavLink
+          to="/profile"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd] transition-opacity hover:opacity-80 overflow-hidden"
+        >
+          {user?.avatar ? (
+            <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+          ) : (
+            userInitial
+          )}
+        </NavLink>
       </div>
 
       {/* Mobile: horizontal bottom tab bar — pinned to bottom of sidebar */}
@@ -70,12 +76,18 @@ export function SidebarNav() {
           <Settings className="h-5 w-5" />
           <span>Settings</span>
         </button>
-
-        <div className="flex flex-col items-center gap-1 px-4 py-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd]">
-            {userInitial}
+        <NavLink
+          to="/profile"
+          className="flex flex-col items-center gap-1 px-4 py-1"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd] overflow-hidden">
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
+            ) : (
+              userInitial
+            )}
           </div>
-        </div>
+        </NavLink>
       </nav>
     </>
   );

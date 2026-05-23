@@ -1,17 +1,18 @@
 import { memo, useMemo, useState, useCallback, useEffect } from "react";
-import { Check, CheckCheck, RotateCcw } from "lucide-react";
+import { Check, CheckCheck, RotateCcw, MoreHorizontal } from "lucide-react";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
 import type { ConversationListUserDto } from "../../types";
 import { MessageType } from "../../types";
 import { cn } from "../../lib/utils";
 import { formatMessageTime } from "../../lib/date";
 import { UploadProgressBadge } from "./UploadProgressBadge";
+import { ReactionDetailPopover, type ReactionGroup } from "./ReactionDetailPopover";
 import { AudioMessage } from "./AudioMessage";
 import { VideoMessage } from "./VideoMessage";
 import { FileMessage } from "./FileMessage";
 import { CallMessage } from "./CallMessage";
 
-const MAX_VISIBLE_REACTIONS = 5;
+const MAX_VISIBLE_REACTIONS = 3;
 
 interface MessageBubbleProps {
   message: MessageDto | OptimisticMessageDto;
@@ -23,6 +24,7 @@ interface MessageBubbleProps {
   onContextMenuOpen: (messageId: string, x: number, y: number) => void;
   onReactionToggle: (messageId: string, emoji: string) => void;
   onImageClick?: (src: string) => void;
+  isHighlighted?: boolean;
 }
 
 function isOptimisticMessage(
@@ -150,12 +152,37 @@ function MessageBubbleComponent({
   onContextMenuOpen,
   onReactionToggle,
   onImageClick,
+  isHighlighted,
 }: MessageBubbleProps) {
+  const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null);
+  const [flashHighlight, setFlashHighlight] = useState(false);
+
+  // Trigger flash animation when highlighted
+  useEffect(() => {
+    if (isHighlighted) {
+      setFlashHighlight(true);
+      const timer = setTimeout(() => setFlashHighlight(false), 1500);
+      return () => clearTimeout(timer);
+    }
+    setFlashHighlight(false);
+  }, [isHighlighted]);
+
   // Call log messages render as centered system items, not bubbles
   if (message.type === MessageType.CALL) {
     return (
       <div className="flex justify-center px-4 py-1.5">
         <CallMessage message={message as MessageDto} isOwn={isOwn} />
+      </div>
+    );
+  }
+
+  // System / event messages render as centred pills (group add, remove, promote…)
+  if (message.type === MessageType.SYSTEM) {
+    return (
+      <div className="flex justify-center px-4 py-2">
+        <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-400 ring-1 ring-white/10">
+          {message.content}
+        </span>
       </div>
     );
   }
@@ -201,11 +228,12 @@ function MessageBubbleComponent({
     >
       <div
         className={cn(
-          "max-w-[78%] rounded-2xl px-4 py-2 text-sm shadow-sm md:max-w-[62%] select-none md:select-auto",
+          "max-w-[78%] rounded-2xl px-4 py-2 text-sm shadow-sm md:max-w-[62%] select-none md:select-auto transition-all duration-500",
           isOwn
             ? "rounded-br-md bg-[#2a1f4e] text-white"
             : "rounded-bl-md bg-[#1a202b] text-white",
           failed && "border border-rose-400/60",
+          flashHighlight && "ring-2 ring-amber-400/70 bg-amber-900/20",
         )}
         style={{ WebkitTouchCallout: "none" }}
       >
@@ -240,58 +268,54 @@ function MessageBubbleComponent({
                 ? reactorIds.includes(currentUserId)
                 : false;
 
-              // Build tooltip text: "You, Alice, Bob" (cap at 5 names)
-              const names = reactorIds
-                .slice(0, 5)
-                .map((uid) =>
-                  uid === currentUserId
-                    ? "You"
-                    : (participantMap.get(uid) ?? "Unknown"),
-                );
-              const tooltipText =
-                names.join(", ") +
-                (reactorIds.length > 5
-                  ? ` +${reactorIds.length - 5} more`
-                  : "");
-
               return (
-                <div key={emoji} className="group/reaction relative">
-                  <button
-                    type="button"
-                    onClick={() => onReactionToggle(message._id, emoji)}
-                    className={cn(
-                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
-                      isMine
-                        ? "border-[#8b5cf6] bg-[#2a1f4e] text-white hover:bg-[#351f6e]"
-                        : "border-white/10 bg-black/20 text-white hover:border-white/30 hover:bg-black/40",
-                    )}
-                    title={tooltipText}
-                  >
-                    <span>{emoji}</span>
-                    <span className="font-medium tabular-nums">{count}</span>
-                  </button>
-
-                  {/* Hover tooltip showing reactor names */}
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-[#273244] bg-[#151b2b] px-2.5 py-1.5 text-xs text-slate-200 shadow-xl",
-                      "opacity-0 transition-opacity duration-150 group-hover/reaction:opacity-100",
-                    )}
-                  >
-                    {tooltipText}
-                    {/* Tooltip arrow */}
-                    <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#273244]" />
-                  </div>
-                </div>
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => onReactionToggle(message._id, emoji)}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
+                    isMine
+                      ? "border-[#8b5cf6] bg-[#2a1f4e] text-white hover:bg-[#351f6e]"
+                      : "border-white/10 bg-black/20 text-white hover:border-white/30 hover:bg-black/40",
+                  )}
+                >
+                  <span>{emoji}</span>
+                  <span className="font-medium tabular-nums">{count}</span>
+                </button>
               );
             })}
 
-            {overflowCount > 0 ? (
-              <span className="flex items-center rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-xs text-slate-400">
-                +{overflowCount} more
-              </span>
-            ) : null}
+            <button
+              type="button"
+              onClick={(e) => {
+                setPopoverAnchor(e.currentTarget.getBoundingClientRect());
+              }}
+              className="flex items-center rounded-full border border-white/10 bg-black/20 px-2 py-0.5 text-xs text-slate-400 hover:bg-black/40 hover:text-white transition-colors"
+            >
+              {overflowCount > 0 ? `+${overflowCount} more` : <MoreHorizontal className="h-3.5 w-3.5" />}
+            </button>
           </div>
+        ) : null}
+
+        {popoverAnchor ? (
+          <ReactionDetailPopover
+            groups={groupedReactions.map(([emoji, { count, reactorIds }]) => ({
+              emoji,
+              count,
+              reactors: reactorIds.map((id) => {
+                const p = participants.find((p) => p.id === id);
+                return {
+                  id,
+                  name: p?.name ?? "Unknown",
+                  avatar: p?.avatar,
+                };
+              }),
+            }))}
+            anchorRect={popoverAnchor}
+            currentUserId={currentUserId}
+            onClose={() => setPopoverAnchor(null)}
+          />
         ) : null}
 
         {failed && isOptimisticMessage(message) ? (

@@ -189,8 +189,16 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
                       onClick={() => handleStartConversation(user)}
                       className="flex w-full items-center gap-4 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#8b5cf6]">
-                        {initials}
+                      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#2a2247]">
+                        {user.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-[#8b5cf6]">{initials}</span>
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">

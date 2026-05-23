@@ -202,7 +202,8 @@ export const useMessageStore = create<MessageStore>()((set, get) => ({
 
       const fakeId = optimistic._id;
 
-      const { [fakeId]: _, ...newById } = s.byId;
+      const newById = { ...s.byId };
+      delete newById[fakeId];
       newById[realMsg._id] = realMsg;
 
       const convIds = s.idsByConversation[realMsg.conversationId] ?? [];
@@ -215,7 +216,8 @@ export const useMessageStore = create<MessageStore>()((set, get) => ({
         newConvIds = [...convIds, realMsg._id];
       }
 
-      const { [tempId]: __, ...newPending } = s.pendingMessages;
+      const newPending = { ...s.pendingMessages };
+      delete newPending[tempId];
 
       return {
         byId: newById,
@@ -257,7 +259,8 @@ export const useMessageStore = create<MessageStore>()((set, get) => ({
       const message = state.byId[messageId];
       if (!message) return state;
 
-      const { [messageId]: removed, ...nextById } = state.byId;
+      const nextById = { ...state.byId };
+      delete nextById[messageId];
       const currentIds = state.idsByConversation[message.conversationId] ?? [];
 
       return {
@@ -354,23 +357,16 @@ export const useMessageStore = create<MessageStore>()((set, get) => ({
       };
     });
   },
-
   clearConversationMessages: (conversationId) => {
     set((state) => {
-      const ids = state.idsByConversation[conversationId] ?? [];
-      const nextById = { ...state.byId };
-
-      for (const id of ids) {
-        delete nextById[id];
+      const messageIds = state.idsByConversation[conversationId] ?? [];
+      const newById = { ...state.byId };
+      for (const id of messageIds) {
+        delete newById[id];
       }
-
-      const { [conversationId]: removedIds, ...nextIdsByConversation } =
-        state.idsByConversation;
-
-      return {
-        byId: nextById,
-        idsByConversation: nextIdsByConversation,
-      };
+      const newIdsByConversation = { ...state.idsByConversation };
+      delete newIdsByConversation[conversationId];
+      return { byId: newById, idsByConversation: newIdsByConversation };
     });
   },
 }));

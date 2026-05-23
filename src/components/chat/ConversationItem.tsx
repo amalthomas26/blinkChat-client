@@ -4,6 +4,7 @@ import type { ConversationListItemDto } from "../../types";
 import { cn } from "../../lib/utils";
 import { useTypingUsers } from "../../store/conversation.selectors";
 import { useIsOnline } from "../../store/presence.selectors";
+import { Pin, BellOff } from "lucide-react";
 
 interface ConversationItemProps {
   conversation: ConversationListItemDto;
@@ -14,7 +15,7 @@ function formatConversationTime(value: string | null | undefined): string {
   if (!value) return "";
 
   const date = new Date(value);
-  const diffMs = Date.now() - date.getTime();
+  const diffMs = Math.max(0, Date.now() - date.getTime());
   const minutes = Math.floor(diffMs / 60000);
 
   if (minutes < 1) return "Now";
@@ -93,25 +94,48 @@ function ConversationItemComponent({
       )}
     >
       <div className="relative shrink-0">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2a2247] text-lg font-semibold text-[#8b5cf6]">
-          {initials}
-        </div>
-
+        {(
+          conversation.type === "direct"
+            ? conversation.peer?.avatar
+            : conversation.groupAvatar
+        ) ? (
+          <img
+            src={
+              (conversation.type === "direct"
+                ? conversation.peer?.avatar
+                : conversation.groupAvatar) ?? ""
+            }
+            alt={displayName}
+            className="h-14 w-14 rounded-full border border-white/10 object-cover"
+          />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2a2247] text-lg font-semibold text-[#8b5cf6]">
+            {initials}
+          </div>
+        )}
         {isOnline ? (
           <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-[#151b2b] bg-[#10b981]" />
         ) : null}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2">
           <p className="truncate text-xl font-semibold text-white">
             {displayName}
           </p>
-          <span className="shrink-0 text-sm text-slate-500">
-            {formatConversationTime(
-              conversation.lastMessage?.createdAt ?? conversation.updatedAt,
-            )}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {conversation.isMuted ? (
+              <BellOff className="h-3.5 w-3.5 text-slate-500" />
+            ) : null}
+            {conversation.isPinned ? (
+              <Pin className="h-3.5 w-3.5 text-[#8b5cf6]" />
+            ) : null}
+            <span className="text-sm text-slate-500">
+              {formatConversationTime(
+                conversation.lastMessage?.createdAt ?? conversation.updatedAt,
+              )}
+            </span>
+          </div>
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-3">

@@ -38,6 +38,24 @@ function PageLoader() {
   );
 }
 
+const ProfilePage = lazy(() =>
+  import("./pages/profile/ProfilePage").then((m) => ({
+    default: m.ProfilePage,
+  })),
+);
+
+const GroupInfoPage = lazy(() =>
+  import("./pages/chat/GroupInfoPage").then((m) => ({
+    default: m.GroupInfoPage,
+  })),
+);
+
+const UserProfilePage = lazy(() =>
+  import("./pages/profile/UserProfilePage").then((m) => ({
+    default: m.UserProfilePage,
+  })),
+);
+
 export default function App() {
   useSocket();
   useNotificationNavigation();
@@ -63,7 +81,10 @@ export default function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:id" element={<ChatPage />} />
+            <Route path="/chat/:id/info" element={<GroupInfoPage />} />
+            <Route path="/user/:id" element={<UserProfilePage />} />
             <Route path="/calls" element={<CallHistoryPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

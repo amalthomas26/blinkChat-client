@@ -3,6 +3,7 @@ import { conversationService } from "../services/conversation.service";
 import type {
   ConversationListItemDto,
   ConversationListMessageDto,
+  ConversationListUserDto,
 } from "../types";
 import { ApiError } from "../lib/api";
 
@@ -30,9 +31,17 @@ export interface ConversationActions {
     updatedAt: string,
   ) => void;
   updateUnreadCount: (convId: string, count: number) => void;
-  incrementUnreadCount:(convId:string)=>void;
+  incrementUnreadCount: (convId: string) => void;
   setTypingUser: (convId: string, userId: string) => void;
   clearTypingUser: (convId: string, userId: string) => void;
+  toggleMute: (convId: string, isMuted: boolean) => void;
+  togglePin: (convId: string, isPinned: boolean) => void;
+  updateParticipants: (
+    convId: string,
+    participants: ConversationListUserDto[],
+  ) => void;
+  updateGroupName: (convId: string, name: string) => void;
+  updateGroupAvatar: (convId: string, groupAvatar: string | null) => void;
 }
 
 export type ConversationStore = ConversationState & ConversationActions;
@@ -135,10 +144,17 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
         ...state.byId,
         [convId]: { ...conv, lastMessage: msg, updatedAt: msg.createdAt },
       };
-      return {
-        byId: newById,
-        orderedIds: sortByUpdatedAt(newById, state.orderedIds),
-      };
+
+      // OPT-3: O(n) move-to-front instead of O(n log n) full sort.
+      // A new message always makes this conversation the most recent.
+      const idx = state.orderedIds.indexOf(convId);
+      if (idx === 0) {
+        return { byId: newById };
+      }
+      const nextIds = [...state.orderedIds];
+      if (idx > 0) nextIds.splice(idx, 1);
+      nextIds.unshift(convId);
+      return { byId: newById, orderedIds: nextIds };
     });
   },
 
@@ -242,6 +258,70 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
         return { typingUsers: rest }; // clean up empty Set
       }
       return { typingUsers: { ...state.typingUsers, [convId]: next } };
+    });
+  },
+  toggleMute: (convId, isMuted) => {
+    set((state) => {
+      const conv = state.byId[convId];
+      if (!conv) return state;
+      return {
+        byId: {
+          ...state.byId,
+          [convId]: { ...conv, isMuted, mutedUntill: null },
+        },
+      };
+    });
+  },
+
+  togglePin: (convId, isPinned) => {
+    set((state) => {
+      const conv = state.byId[convId];
+      if (!conv) return state;
+      return {
+        byId: {
+          ...state.byId,
+          [convId]: { ...conv, isPinned },
+        },
+      };
+    });
+  },
+
+  updateParticipants: (convId, participants) => {
+    set((state) => {
+      const conv = state.byId[convId];
+      if (!conv) return state;
+      return {
+        byId: {
+          ...state.byId,
+          [convId]: { ...conv, participants },
+        },
+      };
+    });
+  },
+
+  updateGroupName: (convId, name) => {
+    set((state) => {
+      const conv = state.byId[convId];
+      if (!conv) return state;
+      return {
+        byId: {
+          ...state.byId,
+          [convId]: { ...conv, name },
+        },
+      };
+    });
+  },
+
+  updateGroupAvatar: (convId, groupAvatar) => {
+    set((state) => {
+      const conv = state.byId[convId];
+      if (!conv) return state;
+      return {
+        byId: {
+          ...state.byId,
+          [convId]: { ...conv, groupAvatar },
+        },
+      };
     });
   },
 }));

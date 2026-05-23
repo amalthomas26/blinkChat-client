@@ -3,7 +3,6 @@ import { apiFetch } from "../lib/api";
 import type {
   MessageDto,
   SendMessageInput,
-  SearchMessagesResult,
   ForwardMessageInput,
 } from "../types";
 
@@ -20,7 +19,8 @@ interface SingleMessageResponse {
 
 interface SearchResponse {
   success: boolean;
-  data: SearchMessagesResult;
+  data: MessageDto[];
+  meta?: { hasMore: boolean };
 }
 
 export const messageService = {

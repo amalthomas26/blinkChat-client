@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type {
   AppNotification,
   BrowserNotificationPermission,
@@ -12,7 +13,9 @@ interface NotificationState {
   orderedIds: string[];
   seenSourceKeys: Set<string>;
   activeConversationId: string | null;
+  activeConversationId: string | null;
   browserPermission: BrowserNotificationPermission;
+  isGlobalMuted: boolean;
 }
 
 interface NotificationActions {
@@ -24,6 +27,7 @@ interface NotificationActions {
   markSourceSeen: (sourceKey: string) => void;
   setActiveConversationId: (conversationId: string | null) => void;
   setBrowserPermission: (permission: BrowserNotificationPermission) => void;
+  toggleGlobalMute: () => void;
 }
 
 export type NotificationStore = NotificationState & NotificationActions;
@@ -34,13 +38,16 @@ function createNotificationId(input: CreateAppNotificationInput): string {
   return `${input.kind}:${Date.now()}`;
 }
 
-export const useNotificationStore = create<NotificationStore>()((set, get) => ({
+export const useNotificationStore = create<NotificationStore>()(
+  persist(
+    (set, get) => ({
   byId: {},
   orderedIds: [],
   seenSourceKeys: new Set<string>(),
   activeConversationId: null,
   browserPermission:
     "Notification" in window ? Notification.permission : "unsupported",
+  isGlobalMuted: false,
 
   addNotification: (input) => {
     const notification: AppNotification = {
@@ -113,9 +120,16 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => ({
   hasSeenSource: (sourceKey) => get().seenSourceKeys.has(sourceKey),
 
   markSourceSeen: (sourceKey) => {
-    set((state) => ({
-      seenSourceKeys: new Set(state.seenSourceKeys).add(sourceKey),
-    }));
+    set((state) => {
+      const next = new Set(state.seenSourceKeys);
+      next.add(sourceKey);
+      // SM-2 fix: cap at 500 entries to prevent unbounded growth
+      if (next.size > 500) {
+        const it = next.values();
+        next.delete(it.next().value!);
+      }
+      return { seenSourceKeys: next };
+    });
   },
 
   setActiveConversationId: (conversationId) => {
@@ -125,4 +139,18 @@ export const useNotificationStore = create<NotificationStore>()((set, get) => ({
   setBrowserPermission: (permission) => {
     set({ browserPermission: permission });
   },
-}));
+
+  toggleGlobalMute: () => {
+    set((state) => {
+      // If unmuting and browser permission is default, we can also try to request it.
+      // But we handle the actual request in the UI component to ensure it's triggered by user interaction.
+      return { isGlobalMuted: !state.isGlobalMuted };
+    });
+  },
+}),
+    {
+      name: "blinkchat-notifications",
+      partialize: (state) => ({ isGlobalMuted: state.isGlobalMuted }),
+    }
+  )
+);

@@ -27,7 +27,7 @@ function connect(accessToken: string): AppSocket {
     auth: { token: accessToken },
     transports: ["websocket", "polling"],
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,

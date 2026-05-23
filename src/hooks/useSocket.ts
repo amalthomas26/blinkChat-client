@@ -193,6 +193,110 @@ export const useSocket = () => {
       useConversationStore.getState().upsertConversation(conversation);
     };
 
+    const handleGroupMembersAdded = (payload: {
+      conversationId: string;
+      members: import("../types").ConversationListUserDto[];
+    }) => {
+      const store = useConversationStore.getState();
+      const conv = store.byId[payload.conversationId];
+      if (!conv) return;
+      const existingIds = new Set(conv.participants.map((p) => p.id));
+      const merged = [
+        ...conv.participants,
+        ...payload.members.filter((m) => !existingIds.has(m.id)),
+      ];
+      store.updateParticipants(payload.conversationId, merged);
+    };
+
+    const handleGroupMembersRemoved = (payload: {
+      conversationId: string;
+      removedUserIds: string[];
+    }) => {
+      const store = useConversationStore.getState();
+      const conv = store.byId[payload.conversationId];
+      if (!conv) return;
+      const removedSet = new Set(payload.removedUserIds);
+      const currentUserId = useAuthStore.getState().user?.id;
+      // If the current user was removed, drop the conversation entirely
+      if (currentUserId && removedSet.has(currentUserId)) {
+        store.removeConversation(payload.conversationId);
+        return;
+      }
+      store.updateParticipants(
+        payload.conversationId,
+        conv.participants.filter((p) => !removedSet.has(p.id)),
+      );
+    };
+
+    const handleGroupRenamed = (payload: {
+      conversationId: string;
+      name: string;
+    }) => {
+      useConversationStore.getState().updateGroupName(payload.conversationId, payload.name);
+    };
+
+    const handleGroupMemberLeft = (payload: {
+      conversationId: string;
+      userId: string;
+      newAdminId?: string;
+    }) => {
+      const store = useConversationStore.getState();
+      const conv = store.byId[payload.conversationId];
+      if (!conv) return;
+      let updated = conv.participants.filter((p) => p.id !== payload.userId);
+      if (payload.newAdminId) {
+        updated = updated.map((p) =>
+          p.id === payload.newAdminId ? { ...p, role: "admin" as const } : p,
+        );
+      }
+      store.updateParticipants(payload.conversationId, updated);
+    };
+
+    const handleGroupAvatarUpdated = (payload: {
+      conversationId: string;
+      groupAvatar: string;
+    }) => {
+      useConversationStore
+        .getState()
+        .updateGroupAvatar(payload.conversationId, payload.groupAvatar);
+    };
+
+    const handleGroupAvatarDeleted = (payload: { conversationId: string }) => {
+      useConversationStore
+        .getState()
+        .updateGroupAvatar(payload.conversationId, null);
+    };
+
+    const handleMemberPromoted = (payload: {
+      conversationId: string;
+      promotedUserId: string;
+    }) => {
+      const store = useConversationStore.getState();
+      const conv = store.byId[payload.conversationId];
+      if (!conv) return;
+      store.updateParticipants(
+        payload.conversationId,
+        conv.participants.map((p) =>
+          p.id === payload.promotedUserId ? { ...p, role: "admin" as const } : p,
+        ),
+      );
+    };
+
+    const handleMemberDemoted = (payload: {
+      conversationId: string;
+      demoteUserId: string;
+    }) => {
+      const store = useConversationStore.getState();
+      const conv = store.byId[payload.conversationId];
+      if (!conv) return;
+      store.updateParticipants(
+        payload.conversationId,
+        conv.participants.map((p) =>
+          p.id === payload.demoteUserId ? { ...p, role: "member" as const } : p,
+        ),
+      );
+    };
+
     const handleTyping = (payload: {
       conversationId: string;
       userId: string;
@@ -353,6 +457,14 @@ export const useSocket = () => {
 
     socket.on("receive_message", handleReceiveMessage);
     socket.on("group_created", handleGroupCreated);
+    socket.on("group_members_added", handleGroupMembersAdded);
+    socket.on("group_members_removed", handleGroupMembersRemoved);
+    socket.on("group_renamed", handleGroupRenamed);
+    socket.on("group_member_left", handleGroupMemberLeft);
+    socket.on("group_avatar_updated", handleGroupAvatarUpdated);
+    socket.on("group_avatar_deleted", handleGroupAvatarDeleted);
+    socket.on("member_promoted", handleMemberPromoted);
+    socket.on("member_demoted", handleMemberDemoted);
     socket.on("message_deleted", handleMessageDeleted);
     socket.on("messages_delivered_update", handleDeliveryUpdate);
     socket.on("messages_read_update", handleReadUpdate);
@@ -390,8 +502,22 @@ export const useSocket = () => {
       });
     };
 
-    // Fire on every socket reconnect (handles network blips, hot-reload).
-    socket.on("connect", syncPresence);
+    // SM-1 fix: track whether this is a reconnect (not the first connect)
+    let hasConnectedOnce = false;
+
+    const handleConnect = () => {
+      syncPresence();
+
+      if (hasConnectedOnce) {
+        // This is a REconnect — re-fetch conversations to pick up
+        // any messages that arrived while the socket was disconnected.
+        useConversationStore.getState().fetchConversations();
+      }
+      hasConnectedOnce = true;
+    };
+
+    // Fire on every socket (re)connect.
+    socket.on("connect", handleConnect);
 
     // Problem: on first mount the socket connects BEFORE conversations
     // are fetched, so peerIds is empty and syncPresence does nothing.
@@ -406,12 +532,20 @@ export const useSocket = () => {
     });
 
     // Also fire immediately if both are already ready on mount
-    if (socket.connected) syncPresence();
+    if (socket.connected) handleConnect();
     // ─────────────────────────────────────────────────────────────────
 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
       socket.off("group_created", handleGroupCreated);
+      socket.off("group_members_added", handleGroupMembersAdded);
+      socket.off("group_members_removed", handleGroupMembersRemoved);
+      socket.off("group_renamed", handleGroupRenamed);
+      socket.off("group_member_left", handleGroupMemberLeft);
+      socket.off("group_avatar_updated", handleGroupAvatarUpdated);
+      socket.off("group_avatar_deleted", handleGroupAvatarDeleted);
+      socket.off("member_promoted", handleMemberPromoted);
+      socket.off("member_demoted", handleMemberDemoted);
       socket.off("message_deleted", handleMessageDeleted);
       socket.off("messages_delivered_update", handleDeliveryUpdate);
       socket.off("messages_read_update", handleReadUpdate);
@@ -434,7 +568,7 @@ export const useSocket = () => {
       socket.off("webrtc:ice-candidate", handleWebRTCIceCandidate);
       socket.off("webrtc:restart-ice", handleWebRTCRestartIce);
 
-      socket.off("connect", syncPresence);
+      socket.off("connect", handleConnect);
       unsubConversations();
     };
   }, [isAuthenticated, accessToken]);

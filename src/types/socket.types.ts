@@ -206,6 +206,10 @@ export interface ServerToClientEvents {
     conversationId: string;
     promotedUserId: string;
   }) => void;
+  member_demoted: (payload: {
+    conversationId: string;
+    demoteUserId: string;
+  }) => void;
 
   message_pinned: (payload: {
     conversationId: string;

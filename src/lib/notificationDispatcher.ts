@@ -7,7 +7,10 @@ import { shouldUseBrowserNotification } from "./notificationRules";
 export function dispatchAppNotification(
   input: CreateAppNotificationInput,
 ): void {
-  const notification = useNotificationStore.getState().addNotification(input);
+  const state = useNotificationStore.getState();
+  if (state.isGlobalMuted) return;
+
+  const notification = state.addNotification(input);
 
   const shouldUseNative = shouldUseBrowserNotification();
 

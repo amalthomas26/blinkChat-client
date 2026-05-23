@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { MessageSquareText } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ChatLayout } from "../../components/layout/ChatLayout";
 import { Sidebar } from "../../components/layout/Sidebar";
 import { ChatHeader } from "../../components/chat/ChatHeader";
+import { MessageSearchBar } from "../../components/chat/MessageSearchBar";
 import { MessageList } from "../../components/chat/MessageList";
 import { MessageComposer } from "../../components/chat/MessageComposer";
 import {
@@ -14,6 +15,7 @@ import { ForwardMessageDialog } from "../../components/chat/ForwardMessageDialog
 import { useResponsive } from "../../hooks/useResponsive";
 import { useConversationRoom } from "../../hooks/useConversationRoom";
 import { useMessages } from "../../hooks/useMessages";
+import { useMessageSearch } from "../../hooks/useMessageSearch";
 import { useSendMessage } from "../../hooks/useSendMessage";
 import {
   useConversation,
@@ -23,12 +25,17 @@ import {
 import { useMessage, useMessageActions } from "../../store/message.selectors";
 import { useMessageStore } from "../../store/message.store";
 import { messageService } from "../../services/message.service";
+import { conversationService } from "../../services/conversation.service";
 import { socketService } from "../../services/socket.service";
+import { useConversationStore } from "../../store/conversation.store";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
 import { ImageViewer } from "../../components/chat/ImageViewer";
 import {useActiveConversationNotification} from "../../hooks/useActiveConversationNotification";
 
 
+import type { ConversationListUserDto } from "../../types";
+
+const EMPTY_PARTICIPANTS: ConversationListUserDto[] = [];
 
 interface ThreadShellProps {
   conversationId?: string;
@@ -47,6 +54,9 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
     y: number;
   } | null>(null);
   const [viewerImageSrc, setViewerImageSrc] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const replyToMessage = useMessage(replyToId ?? "");
   const selectedMessage = useMessage(contextMenu?.messageId ?? "");
@@ -54,6 +64,8 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
   useActiveConversationNotification(conversationId);
 
   const { isJoined, joinError } = useConversationRoom(conversationId);
+
+  const messageSearch = useMessageSearch(conversationId);
 
   const {
     isLoading,
@@ -65,8 +77,73 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
   } = useMessages(conversationId);
 
   const { sendMessage } = useSendMessage();
-  const { deleteMessage, addReaction, removeReaction } = useMessageActions();
-  const { updateAfterMessageDelete } = useConversationActions();
+  const {
+    deleteMessage,
+    addReaction,
+    removeReaction,
+    clearConversationMessages,
+  } = useMessageActions();
+  const {
+    updateAfterMessageDelete,
+    toggleMute,
+    togglePin,
+  } = useConversationActions();
+  const navigate = useNavigate();
+
+  const handleMuteToggle = async () => {
+    if (!conversation || !conversationId) return;
+    const nextMuted = !conversation.isMuted;
+    toggleMute(conversationId, nextMuted);
+    try {
+      if (nextMuted) {
+        await conversationService.muteConversation(conversationId);
+      } else {
+        await conversationService.unmuteConversation(conversationId);
+      }
+    } catch {
+      toggleMute(conversationId, !nextMuted);
+    }
+  };
+
+  const handlePinToggle = async () => {
+    if (!conversation || !conversationId) return;
+    const nextPinned = !conversation.isPinned;
+    togglePin(conversationId, nextPinned);
+    try {
+      if (nextPinned) {
+        await conversationService.pinConversation(conversationId);
+      } else {
+        await conversationService.unpinConversation(conversationId);
+      }
+    } catch {
+      togglePin(conversationId, !nextPinned);
+    }
+  };
+
+  const handleClearChat = () => {
+    if (!conversationId) return;
+    clearConversationMessages(conversationId);
+  };
+
+  const handleDeleteChat = async () => {
+    if (!conversationId) return;
+    setIsDeletingChat(true);
+    try {
+      await conversationService.deleteConversation(conversationId);
+      clearConversationMessages(conversationId);
+      useConversationStore.getState().removeConversation(conversationId);
+      navigate("/chat");
+    } catch (err) {
+      console.error("Failed to delete chat", err);
+    } finally {
+      setIsDeletingChat(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleGroupInfo = () => {
+    navigate(`/chat/${conversationId}/info`);
+  };
 
   const typingLabel = useMemo(() => {
     if (!conversation || typingUsers.size === 0) return null;
@@ -167,21 +244,53 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
 
     if (alreadyReacted) {
       removeReaction(messageId, currentUserId);
-      await messageService.removeReaction(messageId, msg.conversationId);
+      try {
+        await messageService.removeReaction(messageId, msg.conversationId);
+      } catch {
+        // Rollback — re-add the reaction the user tried to remove
+        addReaction(messageId, currentUserId, emoji);
+      }
     } else {
       addReaction(messageId, currentUserId, emoji);
-      await messageService.addReaction(messageId, emoji, msg.conversationId);
+      try {
+        await messageService.addReaction(messageId, emoji, msg.conversationId);
+      } catch {
+        // Rollback — remove the optimistically added reaction
+        removeReaction(messageId, currentUserId);
+      }
     }
   };
 
   return (
     // h-full fills the 100dvh section provided by ChatLayout
     <div className="flex h-full flex-col bg-[#101620] text-white">
-      <ChatHeader
-        conversation={conversation}
-        isMobile={isMobile}
-        typingLabel={typingLabel}
-      />
+      {isSearchOpen ? (
+        <MessageSearchBar
+          query={messageSearch.query}
+          currentIndex={messageSearch.currentIndex}
+          totalCount={messageSearch.totalCount}
+          isSearching={messageSearch.isSearching}
+          onQueryChange={messageSearch.search}
+          onNext={messageSearch.goToNext}
+          onPrev={messageSearch.goToPrev}
+          onClose={() => {
+            setIsSearchOpen(false);
+            messageSearch.reset();
+          }}
+        />
+      ) : (
+        <ChatHeader
+          conversation={conversation}
+          isMobile={isMobile}
+          typingLabel={typingLabel}
+          onMuteToggle={handleMuteToggle}
+          onPinToggle={handlePinToggle}
+          onClearChat={handleClearChat}
+          onDeleteChat={() => setShowDeleteConfirm(true)}
+          onGroupInfo={handleGroupInfo}
+          onSearchOpen={() => setIsSearchOpen(true)}
+        />
+      )}
 
       {joinError ? (
         <div className="border-b border-rose-400/30 bg-rose-950/30 px-4 py-2 text-sm text-rose-200">
@@ -200,10 +309,11 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
         <MessageList
           conversationId={conversationId}
           currentUserId={currentUserId}
-          participants={conversation?.participants ?? []}
+          participants={conversation?.participants ?? EMPTY_PARTICIPANTS}
           typingLabel={typingLabel}
           hasMore={hasMore}
           isLoading={isLoading || !isJoined}
+          highlightedMessageId={messageSearch.currentMessageId}
           onLoadOlder={loadOlder}
           onRetry={handleRetry}
           onContextMenuOpen={(messageId, x, y) =>
@@ -254,6 +364,37 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
         src={viewerImageSrc}
         onClose={() => setViewerImageSrc(null)}
       />
+
+      {/* Delete chat confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[#273244] bg-[#101620] p-6 shadow-2xl">
+            <h3 className="text-base font-semibold text-white">Delete Chat?</h3>
+            <p className="mt-2 text-sm text-slate-400">
+              This will permanently delete this conversation for you. The other
+              person won&apos;t be notified.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => void handleDeleteChat()}
+                disabled={isDeletingChat}
+                className="flex-1 rounded-xl bg-rose-600 py-2.5 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-50"
+              >
+                {isDeletingChat ? "Deleting…" : "Yes, Delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeletingChat}
+                className="flex-1 rounded-xl bg-white/5 py-2.5 text-sm text-slate-300 transition hover:bg-white/10"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -265,7 +406,7 @@ export function ChatPage() {
     <ChatLayout
       selectedConversationId={id}
       sidebar={<Sidebar selectedConversationId={id} />}
-      thread={<ThreadShell conversationId={id} />}
+      thread={<ThreadShell key={id} conversationId={id} />}
     />
   );
 }

@@ -38,5 +38,7 @@ export const useConversationActions = () =>
       incrementUnreadCount: s.incrementUnreadCount,
       setTypingUser: s.setTypingUser,
       clearTypingUser: s.clearTypingUser,
+      toggleMute: s.toggleMute,
+      togglePin: s.togglePin,
     }))
   );
