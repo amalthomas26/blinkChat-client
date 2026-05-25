@@ -17,6 +17,8 @@ export interface RegisterData {
   name: string;
   email: string;
   password?: string;
+  username?: string;
+  verifiedToken?: string;
 }
 
 export interface LoginData {
