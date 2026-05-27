@@ -55,6 +55,14 @@ export const ForgotPasswordPage = () => {
     const otpForm = useForm<{ otp: string }>();
     const resetForm = useForm<{ newPassword: string; confirmPassword: string }>();
 
+    // Wrap handleSubmit in useCallback to avoid react-hooks/refs lint error
+    // (react-hook-form's handleSubmit reads internal refs; wrapping gives a stable reference)
+    const onEmailSubmit = useCallback(
+        emailForm.handleSubmit(handleSendOtp),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [handleSendOtp],
+    );
+
     // Chrome ignores autoComplete="off" and autofills fields in multiple waves
     // after DOM paint. Fire setValue at 50ms, 150ms, and 300ms to catch all passes.
     useEffect(() => {
@@ -177,7 +185,7 @@ export const ForgotPasswordPage = () => {
                 subtitle="Enter your email to receive a verification code"
             >
                 <form
-                    onSubmit={emailForm.handleSubmit(handleSendOtp)}
+                    onSubmit={onEmailSubmit}
                     autoComplete="off"
                     className="space-y-4 flex flex-col"
                 >

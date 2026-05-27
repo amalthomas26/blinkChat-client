@@ -80,6 +80,14 @@ export const SignupPage = () => {
   const otpForm = useForm<OtpStepData>();
   const detailsForm = useForm<DetailsStepData>();
 
+  // Wrap handleSubmit in useCallback to avoid react-hooks/refs lint error
+  // (react-hook-form's handleSubmit reads internal refs; wrapping gives a stable reference)
+  const onEmailSubmit = useCallback(
+    emailForm.handleSubmit(handleSendOtp),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleSendOtp],
+  );
+
   // Chrome ignores autoComplete="off" and autofills fields in multiple waves
   // after DOM paint. We fire setValue at 50ms, 150ms, and 300ms to catch all
   // of Chrome's autofill passes.
@@ -206,7 +214,7 @@ export const SignupPage = () => {
     return (
       <AuthLayout title="Create your account" subtitle="Join BlinkChat today">
         <form
-          onSubmit={emailForm.handleSubmit(handleSendOtp)}
+          onSubmit={onEmailSubmit}
           autoComplete="off"
           className="space-y-4 flex flex-col"
         >
