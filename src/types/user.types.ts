@@ -1,3 +1,5 @@
+import type { NotificationPrefs, PrivacyPrefs } from "./auth.types";
+
 export interface UserProfileDto {
   id: string;
   name: string;
@@ -9,6 +11,9 @@ export interface UserProfileDto {
   lastSeen: string | null;
   provider: "local" | "google";
   isEmailVerified: boolean;
+  twoFactorEnabled: boolean;
+  notificationPrefs: NotificationPrefs;
+  privacyPrefs: PrivacyPrefs;
   createdAt: string;
 }
 

@@ -77,4 +77,37 @@ export const userService = {
 
   getBlockedUsers: () =>
     apiFetch<{ success: boolean; data: string[] }>("/users/blocked"),
+
+  toggle2FA: (enable: boolean, password: string) =>
+    apiFetch<{ success: boolean; data: { twoFactorEnabled: boolean } }>(
+      "/users/me/2fa",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ enable, password }),
+      },
+    ),
+
+  updateNotificationPrefs: (prefs: Partial<{
+    browserNotifications: boolean;
+    sounds: boolean;
+    muteAll: boolean;
+  }>) =>
+    apiFetch<{
+      success: boolean;
+      data: { browserNotifications: boolean; sounds: boolean; muteAll: boolean };
+    }>("/users/me/notification-prefs", {
+      method: "PATCH",
+      body: JSON.stringify(prefs),
+    }),
+  updatePrivacyPrefs: (prefs: Partial<{
+    showOnlineStatus: boolean;
+    showLastSeen: boolean;
+  }>) =>
+    apiFetch<{
+      success: boolean;
+      data: { showOnlineStatus: boolean; showLastSeen: boolean };
+    }>("/users/me/privacy-prefs", {
+      method: "PATCH",
+      body: JSON.stringify(prefs),
+    }),
 };

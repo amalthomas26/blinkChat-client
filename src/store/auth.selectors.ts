@@ -17,4 +17,5 @@ export const useAuthActions = () =>
     logout: state.logout,
     clearError: state.clearError,
     setUser: state.setUser,
+    verifyLogin2FA: useAuthStore((s) => s.verifyLogin2FA)
   })));

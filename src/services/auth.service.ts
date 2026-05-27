@@ -3,6 +3,8 @@ import type {
   AuthResponse,
   RegisterData,
   LoginData,
+  SessionDto,
+  LoginResponse,
 } from "../types/auth.types";
 
 export const authService = {
@@ -14,9 +16,18 @@ export const authService = {
   },
 
   login: (data: LoginData) => {
-    return apiFetch<AuthResponse>("/auth/login", {
+    return apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+
+
+
+  verifyLogin2FA: (email: string, otp: string) => {
+    return apiFetch<AuthResponse>("/auth/verify-2fa", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
     });
   },
 
@@ -32,6 +43,7 @@ export const authService = {
       method: "POST",
     });
   },
+
   forgotPassword: (email: string) => {
     return apiFetch<{ success: boolean; message: string }>(
       "/auth/forgot-password",
@@ -39,8 +51,9 @@ export const authService = {
         method: "POST",
         body: JSON.stringify({ email }),
       },
-    )
+    );
   },
+
   resetPassword: (data: {
     email: string;
     newPassword: string;
@@ -55,4 +68,34 @@ export const authService = {
     );
   },
 
-};
+  //Password & Session management
+  changePassword: (currentPassword: string, newPassword: string) => {
+    return apiFetch<{ success: boolean; message: string }>(
+      "/auth/change-password",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      },
+    );
+  },
+
+  getSessions: () => {
+    return apiFetch<{ success: boolean; data: SessionDto[] }>(
+      "/auth/sessions",
+    );
+  },
+
+  revokeSession: (sessionId: string) => {
+    return apiFetch<{ success: boolean; message: string }>(
+      `/auth/sessions/${sessionId}`,
+      { method: "DELETE" },
+    );
+  },
+
+  revokeAllOtherSessions: () => {
+    return apiFetch<{ success: boolean; message: string }>(
+      "/auth/sessions",
+      { method: "DELETE" },
+    );
+  },
+}

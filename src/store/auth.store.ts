@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, LoginData, RegisterData } from "../types/auth.types";
+import type { User, LoginData, RegisterData, LoginResponseSuccess } from "../types/auth.types";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../lib/api";
 
@@ -22,6 +22,7 @@ export interface AuthActions {
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
   initAuth: () => Promise<void>;
+  verifyLogin2FA: (email: string, otp: string) => Promise<void>;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -43,6 +44,40 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
           const response = await authService.login(data);
+
+          if (response.data.requires2FA) {
+            set({ isLoading: false });
+
+            const err = new Error("2FA_REQUIRED") as Error & { email: string };
+            err.email = response.data.email;
+            throw err;
+          }
+
+          const successData = response.data as LoginResponseSuccess;
+          set({
+            user: successData.user,
+            accessToken: successData.accessToken,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error: unknown) {
+
+
+          if (error instanceof Error && error.message === "2FA_REQUIRED") {
+            set({ isLoading: false });
+            throw error;
+          }
+
+          const message =
+            error instanceof ApiError ? error.message : "Login failed";
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+      verifyLogin2FA: async (email: string, otp: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authService.verifyLogin2FA(email, otp);
           set({
             user: response.data.user,
             accessToken: response.data.accessToken,
@@ -51,11 +86,15 @@ export const useAuthStore = create<AuthStore>()(
           });
         } catch (error: unknown) {
           const message =
-            error instanceof ApiError ? error.message : "Login failed";
+            error instanceof ApiError
+              ? error.message
+              : "2FA verification failed";
           set({ error: message, isLoading: false });
           throw error;
         }
       },
+
+
       register: async (data: RegisterData) => {
         try {
           set({ isLoading: true, error: null });
@@ -142,21 +181,16 @@ export const useAuthStore = create<AuthStore>()(
       name: "blinkchat-auth",
       partialize: (state) => ({
         user: state.user,
-        // accessToken is intentionally NOT persisted — it lives in
-        // memory only, so an XSS attack cannot steal it from localStorage.
+
         isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
 
-// Cross-tab synchronization
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
     if (event.key === "blinkchat-auth") {
-      // Zustand's persist middleware automatically writes to localStorage,
-      // but doesn't auto-hydrate on changes from OTHER tabs in older versions.
-      // We manually call rehydrate to update this tab's memory state.
       useAuthStore.persist.rehydrate();
     }
   });

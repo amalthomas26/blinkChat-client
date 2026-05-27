@@ -383,7 +383,7 @@ export function GroupInfoPage() {
         onClose={() => setViewerSrc(null)}
       />
 
-      {/* Header */}
+    
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[#273244] bg-[#101620] px-3 sm:h-16 sm:px-4">
         <button
           type="button"
@@ -398,7 +398,7 @@ export function GroupInfoPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-lg px-4 py-6 sm:px-6 sm:py-8">
 
-          {/* Error banner */}
+         
           {error ? (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-rose-400/30 bg-rose-950/30 px-4 py-2 text-sm text-rose-200">
               <span>{error}</span>
@@ -408,10 +408,10 @@ export function GroupInfoPage() {
             </div>
           ) : null}
 
-          {/* ── Avatar ────────────────────────────────────────────────── */}
+       
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              {/* Clickable avatar → fullscreen viewer */}
+          
               <button
                 type="button"
                 onClick={() => avatarUrl && setViewerSrc(avatarUrl)}
@@ -432,7 +432,7 @@ export function GroupInfoPage() {
                 )}
               </button>
 
-              {/* Camera overlay — admin only */}
+             
               {isAdmin && (
                 <button
                   type="button"
@@ -444,7 +444,7 @@ export function GroupInfoPage() {
                 </button>
               )}
 
-              {/* Always-rendered hidden file input */}
+   
               <input
                 ref={fileInputRef}
                 type="file"
@@ -470,7 +470,7 @@ export function GroupInfoPage() {
             ) : null}
           </div>
 
-          {/* ── Group name ─────────────────────────────────────────────── */}
+        
           <div className="mt-8">
             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">
               Group Name
@@ -495,7 +495,7 @@ export function GroupInfoPage() {
             )}
           </div>
 
-          {/* ── Description ────────────────────────────────────────────── */}
+      
           <div className="mt-5">
             <div className="mb-2 flex items-center justify-between">
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
