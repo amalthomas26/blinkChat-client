@@ -1,6 +1,6 @@
 // client/src/pages/auth/SignupPage.tsx
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/auth/AuthLayout";
@@ -79,14 +79,6 @@ export const SignupPage = () => {
   const emailForm = useForm<EmailStepData>();
   const otpForm = useForm<OtpStepData>();
   const detailsForm = useForm<DetailsStepData>();
-
-  // Wrap handleSubmit in useCallback to avoid react-hooks/refs lint error
-  // (react-hook-form's handleSubmit reads internal refs; wrapping gives a stable reference)
-  const onEmailSubmit = useCallback(
-    emailForm.handleSubmit(handleSendOtp),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleSendOtp],
-  );
 
   // Chrome ignores autoComplete="off" and autofills fields in multiple waves
   // after DOM paint. We fire setValue at 50ms, 150ms, and 300ms to catch all
@@ -214,7 +206,8 @@ export const SignupPage = () => {
     return (
       <AuthLayout title="Create your account" subtitle="Join BlinkChat today">
         <form
-          onSubmit={onEmailSubmit}
+          // eslint-disable-next-line react-hooks/refs
+          onSubmit={emailForm.handleSubmit(handleSendOtp)}
           autoComplete="off"
           className="space-y-4 flex flex-col"
         >

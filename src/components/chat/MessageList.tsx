@@ -106,6 +106,7 @@ export function MessageList({
     return buildMessageRows(messages);
   }, [messageIds]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
