@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
 import { buildMessageRows } from "../../lib/messageRows";
@@ -31,7 +31,7 @@ interface MessageListProps {
   highlightedMessageId?: string | null;
 }
 
-function MessageRow({
+const MessageRow = memo(function MessageRow({
   messageId,
   currentUserId,
   participants,
@@ -73,7 +73,7 @@ function MessageRow({
       isHighlighted={isHighlighted}
     />
   );
-}
+});
 
 export function MessageList({
   conversationId,
@@ -152,32 +152,38 @@ export function MessageList({
     }
   }, [highlightedMessageId, rows, virtualizer]);
 
-  const handleScroll = async () => {
-    const node = scrollRef.current;
-    if (!node) return;
+  const scrollRAFRef = useRef<number | null>(null);
 
-    const bottom = isAtBottom();
-    onAtBottomChange(bottom);
+  const handleScroll = () => {
+    if (scrollRAFRef.current !== null) return;
+    scrollRAFRef.current = requestAnimationFrame(async () => {
+      scrollRAFRef.current = null;
+      const node = scrollRef.current;
+      if (!node) return;
 
-    if (bottom) {
-      setShowNewMessages(false);
-      onMarkRead();
-    }
+      const bottom = isAtBottom();
+      onAtBottomChange(bottom);
 
-    if (node.scrollTop < 80 && hasMore && !isLoading) {
-      const previousHeight = node.scrollHeight;
-      const previousTop = node.scrollTop;
+      if (bottom) {
+        setShowNewMessages(false);
+        onMarkRead();
+      }
 
-      await onLoadOlder();
+      if (node.scrollTop < 80 && hasMore && !isLoading) {
+        const previousHeight = node.scrollHeight;
+        const previousTop = node.scrollTop;
 
-      requestAnimationFrame(() => {
-        const nextNode = scrollRef.current;
-        if (!nextNode) return;
+        await onLoadOlder();
 
-        const heightDelta = nextNode.scrollHeight - previousHeight;
-        nextNode.scrollTop = previousTop + heightDelta;
-      });
-    }
+        requestAnimationFrame(() => {
+          const nextNode = scrollRef.current;
+          if (!nextNode) return;
+
+          const heightDelta = nextNode.scrollHeight - previousHeight;
+          nextNode.scrollTop = previousTop + heightDelta;
+        });
+      }
+    });
   };
 
   if (rows.length === 0 && !isLoading) {

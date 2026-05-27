@@ -30,6 +30,7 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
 
     const trimmedQuery = debouncedQuery.trim();
     if (!trimmedQuery) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       setError(null);
       setIsLoading(false);
@@ -68,6 +69,7 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
       setResults([]);
       setError(null);

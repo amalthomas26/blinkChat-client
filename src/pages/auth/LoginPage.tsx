@@ -22,7 +22,7 @@ export const LoginPage = () => {
   const onSubmit = async (data: LoginData) => {
     try {
       await login(data);
-      navigate("/chat",{replace:true});
+      navigate("/chat", { replace: true });
     } catch (error: unknown) {
       const message =
         error instanceof ApiError ? error.message : "Login failed";
@@ -32,7 +32,7 @@ export const LoginPage = () => {
   const handleGoogleSuccess = async (token: string) => {
     try {
       await googleAuth(token);
-      navigate("/chat",{replace:true});
+      navigate("/chat", { replace: true });
     } catch (error: unknown) {
       const message =
         error instanceof ApiError
@@ -71,6 +71,17 @@ export const LoginPage = () => {
           })}
           error={errors.password?.message}
         />
+        <div className="text-right">
+          <Link
+            to="/forgot-password"
+            className="text-xs text-[#8b5cf6] hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+
+
+
         <button
           type="submit"
           disabled={isLoading}

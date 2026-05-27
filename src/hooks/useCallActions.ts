@@ -36,10 +36,24 @@ export function useCallActions() {
     [],
   );
 
-  const acceptCall = useCallback(() => {
-    const { callId } = store.getState();
+  const acceptCall = useCallback(async () => {
+    const { callId, callType } = store.getState();
     const socket = socketService.getSocket();
-    if (!callId || !socket) return;
+    if (!callId || !socket || !callType) return;
+
+    // ── Request camera/mic HERE, inside the user-gesture handler. ──
+    // Some mobile browsers (Safari, Firefox for Android) block getUserMedia
+    // when called from a socket event (non-user-gesture). By acquiring media
+    // now, we guarantee the permission prompt fires while the user tapped
+    // Accept, and the stream is ready before the WebRTC offer arrives.
+    try {
+      const { acquireMediaForCall } = await import("../hooks/useWebRTC");
+      const stream = await acquireMediaForCall(callType === "video");
+      store.getState().setLocalStream(stream);
+    } catch (err) {
+      console.error("[acceptCall] media acquisition failed:", err);
+      // Still proceed — handleOffer will try again and show a proper error
+    }
 
     socket.emit("call:accept", { callId }, (response) => {
       if ("error" in response) {

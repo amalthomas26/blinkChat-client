@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { ArrowLeft, Camera, Loader2, Trash2, LogOut } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { ArrowLeft, Camera, Loader2, Trash2, LogOut, BadgeCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import { userService } from "../../services/user.service";
@@ -13,26 +13,55 @@ export function ProfilePage() {
   const logout = useAuthStore((s) => s.logout);
 
   const [name, setName] = useState(user?.name ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar ?? "");
 
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [viewerSrc, setViewerSrc] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Fetch full profile on mount (bio is not in auth store)
-  useState(() => {
+  // Fetch full profile on mount.
+  // App.tsx blocks rendering until initAuth() finishes, so the token
+  // is always ready by the time this useEffect runs.
+  useEffect(() => {
+    let cancelled = false;
     userService.getMe().then((res) => {
+      if (cancelled) return;
+      setName(res.data.name ?? "");
       setBio(res.data.bio ?? "");
       setAvatarUrl(res.data.avatar ?? "");
+      setUsername(res.data.username ?? "");
+    }).catch((err) => {
+      if (cancelled) return;
+      // If the user account no longer exists (DB was cleared, account deleted),
+      // force logout to clear the stale localStorage session.
+      if (err?.message === "User not found" || err?.status === 404) {
+        logout();
+        return;
+      }
+      console.error("[ProfilePage] getMe() failed:", err);
     });
-  });
+    return () => { cancelled = true; };
+  }, [logout]);
+
+  // Sync name/avatar from auth store as a fallback if getMe hasn't loaded yet
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (user?.name && !name) setName(user.name);
+    if (user?.avatar && !avatarUrl) setAvatarUrl(user.avatar);
+    if (user?.username && !username) setUsername(user.username ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
 
   const handleSaveName = useCallback(async () => {
     const trimmed = name.trim();
@@ -48,6 +77,23 @@ export function ProfilePage() {
       setIsSavingName(false);
     }
   }, [name, user, setUser]);
+
+  const handleSaveUsername = useCallback(async () => {
+    const trimmed = username.trim().toLowerCase();
+    if (trimmed === (user?.username ?? "")) return;
+    setIsSavingUsername(true);
+    setUsernameError(null);
+    try {
+      await userService.updateMe({ username: trimmed });
+      setUser(user ? { ...user, username: trimmed || null } : null);
+    } catch (err: unknown) {
+      setUsernameError(
+        err instanceof Error ? err.message : "Failed to update username",
+      );
+    } finally {
+      setIsSavingUsername(false);
+    }
+  }, [username, user, setUser]);
 
   const handleSaveBio = useCallback(async () => {
     setIsSavingBio(true);
@@ -224,6 +270,29 @@ export function ProfilePage() {
 
           <div className="mt-5">
             <label className="mb-2 block text-xs font-medium text-slate-400">
+              Username
+            </label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onBlur={() => void handleSaveUsername()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleSaveUsername();
+              }}
+              maxLength={30}
+              className="w-full rounded-xl bg-[#1d2635] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:ring-1 focus:ring-[#8b5cf6]"
+              placeholder="yourname (letters, numbers, underscores)"
+            />
+            {isSavingUsername ? (
+              <p className="mt-1 text-xs text-slate-500">Saving...</p>
+            ) : null}
+            {usernameError ? (
+              <p className="mt-1 text-xs text-rose-400">{usernameError}</p>
+            ) : null}
+          </div>
+
+          <div className="mt-5">
+            <label className="mb-2 block text-xs font-medium text-slate-400">
               Bio
             </label>
             <textarea
@@ -251,6 +320,9 @@ export function ProfilePage() {
               <p className="flex-1 truncate text-sm text-slate-300">
                 {user?.email}
               </p>
+              {user?.isEmailVerified && (
+                <BadgeCheck className="h-5 w-5 text-[#8b5cf6]" />
+              )}
             </div>
           </div>
 

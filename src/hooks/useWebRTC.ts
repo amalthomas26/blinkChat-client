@@ -58,6 +58,10 @@ async function acquireMedia(wantVideo: boolean): Promise<MediaStream> {
   throw new Error("No media device available");
 }
 
+// Exported so useCallActions can call getUserMedia inside the Accept button's
+// user-gesture handler, guaranteeing the permission prompt on mobile browsers.
+export { acquireMedia as acquireMediaForCall };
+
 function deriveQuality(stats: RTCStatsReport): ConnectionQuality {
   let packetLossRate = 0;
   let jitter = 0;
@@ -89,6 +93,11 @@ async function capBitrate(pc: RTCPeerConnection): Promise<void> {
     await sender.setParameters(params);
   }
 }
+
+// Stable module-level reference — useCallStore.getState never changes between renders,
+// so placing it at module scope satisfies useCallback dependency arrays without
+// causing infinite re-renders.
+const getStore = useCallStore.getState;
 
 export function useWebRTC() {
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -128,7 +137,22 @@ export function useWebRTC() {
     iceConfigRef.current = null;
     getStore().setRemoteStream(null);
     getStore().setConnectionQuality(null);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
+
+  // renegotiate is declared BEFORE createPC so the ICE state handler
+  // inside createPC can reference it without a temporal dead zone error.
+  const renegotiate = useCallback(async () => {
+    const pc = pcRef.current;
+    const { callId } = getStore();
+    const socket = socketService.getSocket();
+    if (!pc || !callId || !socket) return;
+
+    const offer = await pc.createOffer({ iceRestart: true });
+    await pc.setLocalDescription(offer);
+    socket.emit("webrtc:offer", { callId, sdp: offer.sdp! });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
 
   const createPC = useCallback(async (): Promise<RTCPeerConnection> => {
     // Fetch ICE config once per call (credentials are time-limited)
@@ -205,23 +229,13 @@ export function useWebRTC() {
         const stats = await pc.getStats();
         const quality = deriveQuality(stats);
         getStore().setConnectionQuality(quality);
-      } catch {}
+      } catch { /* stats poll failed silently */ }
     }, STATS_POLL_INTERVAL_MS);
 
     pcRef.current = pc;
     return pc;
-  }, [cleanup]);
-
-  const renegotiate = useCallback(async () => {
-    const pc = pcRef.current;
-    const { callId } = getStore();
-    const socket = socketService.getSocket();
-    if (!pc || !callId || !socket) return;
-
-    const offer = await pc.createOffer({ iceRestart: true });
-    await pc.setLocalDescription(offer);
-    socket.emit("webrtc:offer", { callId, sdp: offer.sdp! });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanup, renegotiate, getStore]);
 
   const startCall = useCallback(async () => {
     const { callType, callId } = getStore();

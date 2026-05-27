@@ -5,6 +5,7 @@ import { GuestRoute } from "./components/guards/GuestRoute";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { useSocket } from "./hooks/useSocket";
 import { useCallPhase } from "./store/call.selectors";
+import { useIsInitializing } from "./store/auth.selectors";
 
 // Eagerly imported — call components are critical-path and must be ready
 // immediately when a call event arrives. Lazy loading caused a race condition
@@ -28,6 +29,13 @@ const CallHistoryPage = lazy(() =>
   import("./pages/call/CallHistoryPage").then((m) => ({
     default: m.CallHistoryPage,
   })),
+);
+
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/auth/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage
+  })),
+
 );
 
 function PageLoader() {
@@ -60,6 +68,7 @@ export default function App() {
   useSocket();
   useNotificationNavigation();
 
+  const isInitializing = useIsInitializing();
   const phase = useCallPhase();
   const showIncoming = phase === "incoming_ringing";
   const showOverlay =
@@ -69,6 +78,12 @@ export default function App() {
     phase === "reconnecting" ||
     phase === "failed";
 
+  // Block rendering while initAuth() is restoring the session on page refresh.
+  // Without this, protected pages mount before the access token is available.
+  if (isInitializing) {
+    return <PageLoader />;
+  }
+
   return (
     <>
       <Suspense fallback={<PageLoader />}>
@@ -77,6 +92,7 @@ export default function App() {
           <Route element={<GuestRoute />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
           <Route element={<PrivateRoute />}>
             <Route path="/chat" element={<ChatPage />} />

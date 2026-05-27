@@ -10,6 +10,49 @@ type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 let socket: AppSocket | null = null;
 let currentToken: string | null = null;
 
+// ── MAJ-6: Refresh the socket's auth token on connect_error ──
+// When the access token expires and Socket.IO tries to reconnect,
+// the server rejects the stale token. This handler silently fetches
+// a fresh access token via the httpOnly refresh cookie, updates
+// socket.auth, and lets the built-in reconnection retry.
+let isRefreshingSocketToken = false;
+
+async function handleSocketAuthError(s: AppSocket): Promise<void> {
+  if (isRefreshingSocketToken) return;
+  isRefreshingSocketToken = true;
+
+  try {
+    const res = await fetch(`${env.API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      // Refresh cookie is invalid — nothing we can do
+      return;
+    }
+
+    const body = await res.json();
+    const newToken: string | undefined = body?.data?.accessToken;
+    if (!newToken) return;
+
+    // Update the in-memory token
+    const { useAuthStore } = await import("../store/auth.store");
+    useAuthStore.getState().setAccessToken(newToken);
+
+    // Update socket auth so the next reconnection attempt uses the new token
+    currentToken = newToken;
+    if (s.auth && typeof s.auth === "object") {
+      (s.auth as Record<string, string>).token = newToken;
+    }
+    // Socket.IO will automatically retry the connection
+  } catch {
+    // Network error — Socket.IO's built-in reconnect backoff will handle it
+  } finally {
+    isRefreshingSocketToken = false;
+  }
+}
+
 function connect(accessToken: string): AppSocket {
   if (socket && currentToken === accessToken) {
     return socket;
@@ -32,6 +75,19 @@ function connect(accessToken: string): AppSocket {
     reconnectionDelayMax: 5000,
     timeout: 10000,
   });
+
+  // MAJ-6: Intercept auth errors during (re)connection
+  socket.on("connect_error", (err) => {
+    const isAuthError =
+      err.message === "AUTH_NO_TOKEN" ||
+      err.message === "AUTH_INVALID_TOKEN" ||
+      err.message === "AUTH_INVALID_PAYLOAD";
+
+    if (isAuthError && socket) {
+      void handleSocketAuthError(socket);
+    }
+  });
+
   return socket;
 }
 

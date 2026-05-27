@@ -6,7 +6,7 @@ import { MessageType } from "../../types";
 import { cn } from "../../lib/utils";
 import { formatMessageTime } from "../../lib/date";
 import { UploadProgressBadge } from "./UploadProgressBadge";
-import { ReactionDetailPopover, type ReactionGroup } from "./ReactionDetailPopover";
+import { ReactionDetailPopover } from "./ReactionDetailPopover";
 import { AudioMessage } from "./AudioMessage";
 import { VideoMessage } from "./VideoMessage";
 import { FileMessage } from "./FileMessage";
@@ -160,12 +160,31 @@ function MessageBubbleComponent({
   // Trigger flash animation when highlighted
   useEffect(() => {
     if (isHighlighted) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFlashHighlight(true);
       const timer = setTimeout(() => setFlashHighlight(false), 1500);
       return () => clearTimeout(timer);
     }
     setFlashHighlight(false);
   }, [isHighlighted]);
+
+  // Build grouped reactions: emoji → { count, reactorIds }
+  // Must be above early returns to satisfy rules-of-hooks
+  const groupedReactions = useMemo(() => {
+    const groups = new Map<string, { count: number; reactorIds: string[] }>();
+
+    for (const reaction of message.reactions ?? []) {
+      const existing = groups.get(reaction.emoji);
+      if (existing) {
+        existing.count += 1;
+        existing.reactorIds.push(reaction.userId);
+      } else {
+        groups.set(reaction.emoji, { count: 1, reactorIds: [reaction.userId] });
+      }
+    }
+
+    return Array.from(groups.entries()); // [emoji, { count, reactorIds }][]
+  }, [message.reactions]);
 
   // Call log messages render as centered system items, not bubbles
   if (message.type === MessageType.CALL) {
@@ -186,32 +205,6 @@ function MessageBubbleComponent({
       </div>
     );
   }
-
-  // Build grouped reactions: emoji → { count, reactorIds }
-  const groupedReactions = useMemo(() => {
-    const groups = new Map<string, { count: number; reactorIds: string[] }>();
-
-    for (const reaction of message.reactions ?? []) {
-      const existing = groups.get(reaction.emoji);
-      if (existing) {
-        existing.count += 1;
-        existing.reactorIds.push(reaction.userId);
-      } else {
-        groups.set(reaction.emoji, { count: 1, reactorIds: [reaction.userId] });
-      }
-    }
-
-    return Array.from(groups.entries()); // [emoji, { count, reactorIds }][]
-  }, [message.reactions]);
-
-  // Build a userId → name lookup from participants for tooltips
-  const participantMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of participants) {
-      map.set(p.id, p.name);
-    }
-    return map;
-  }, [participants]);
 
   const visibleReactions = groupedReactions.slice(0, MAX_VISIBLE_REACTIONS);
   const overflowCount = groupedReactions.length - visibleReactions.length;

@@ -48,6 +48,11 @@ function insertSorted(
 
   const newTime = new Date(newCreatedAt).getTime();
 
+  // Fast path: most messages are the newest — skip the linear scan
+  if (ids.length === 0) return [newId];
+  const lastTime = new Date(byId[ids[ids.length - 1]]?.createdAt ?? 0).getTime();
+  if (newTime >= lastTime) return [...ids, newId];
+
   const insertAt = ids.findIndex((id) => {
     const existingTime = new Date(byId[id]?.createdAt ?? 0).getTime();
     return existingTime > newTime;

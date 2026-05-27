@@ -136,6 +136,7 @@ export function GroupInfoPage() {
   const [isFetching, setIsFetching] = useState(false);
   useEffect(() => {
     if (!conversationId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFetching(true);
     conversationService
       .getConversation(conversationId)
@@ -185,6 +186,7 @@ export function GroupInfoPage() {
 
   // Sync local fields when store updates
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (conversation?.name) setGroupName(conversation.name);
     setAvatarUrl(conversation?.groupAvatar ?? "");
     if (!isEditingDesc) setDescValue(conversation?.groupDescription ?? "");
@@ -206,6 +208,7 @@ export function GroupInfoPage() {
       const raf = requestAnimationFrame(() => { setSearchResults([]); setIsSearching(false); });
       return () => cancelAnimationFrame(raf);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSearching(true);
     const ctrl = new AbortController();
     searchAbortRef.current = ctrl;

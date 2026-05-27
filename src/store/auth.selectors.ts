@@ -4,6 +4,8 @@ import { useAuthStore } from "./auth.store";
 export const useAuthUser = () => useAuthStore((state) => state.user);
 export const useIsAuthenticated = () =>
   useAuthStore((state) => state.isAuthenticated);
+export const useIsInitializing = () =>
+  useAuthStore((state) => state.isInitializing);
 export const useAuthLoading = () => useAuthStore((state) => state.isLoading);
 export const useAuthError = () => useAuthStore((state) => state.error);
 

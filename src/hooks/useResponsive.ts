@@ -17,7 +17,6 @@ export function useResponsive() {
       setIsMobile(event.matches);
     };
 
-    setIsMobile(mediaQueryList.matches);
     mediaQueryList.addEventListener("change", handleChange);
 
     return () => {

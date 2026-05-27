@@ -76,10 +76,32 @@ export const SignupPage = () => {
     };
   }, []);
 
-
   const emailForm = useForm<EmailStepData>();
   const otpForm = useForm<OtpStepData>();
   const detailsForm = useForm<DetailsStepData>();
+
+  // Chrome ignores autoComplete="off" and autofills fields in multiple waves
+  // after DOM paint. We fire setValue at 50ms, 150ms, and 300ms to catch all
+  // of Chrome's autofill passes.
+  useEffect(() => {
+    if (step === "otp") {
+      const t1 = setTimeout(() => otpForm.setValue("otp", ""), 50);
+      const t2 = setTimeout(() => otpForm.setValue("otp", ""), 150);
+      const t3 = setTimeout(() => otpForm.setValue("otp", ""), 300);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+    if (step === "details") {
+      const clear = () => {
+        detailsForm.setValue("name", "");
+        detailsForm.setValue("username", "");
+      };
+      const t1 = setTimeout(clear, 50);
+      const t2 = setTimeout(clear, 150);
+      const t3 = setTimeout(clear, 300);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const handleSendOtp = async (data: EmailStepData) => {
     setIsOtpLoading(true);
@@ -90,6 +112,7 @@ export const SignupPage = () => {
         purpose: "email_verification",
       });
       setEmail(data.email);
+      otpForm.reset(); // clear any stale OTP value before showing the field
       setStep("otp");
       startCooldown();
     } catch (error: unknown) {
@@ -132,6 +155,7 @@ export const SignupPage = () => {
         purpose: "email_verification",
       });
       setVerifiedToken(response.data.verifiedToken);
+      detailsForm.reset(); // clear any stale values before showing details form
       setStep("details");
     } catch (error: unknown) {
       const message =
@@ -183,6 +207,7 @@ export const SignupPage = () => {
       <AuthLayout title="Create your account" subtitle="Join BlinkChat today">
         <form
           onSubmit={emailForm.handleSubmit(handleSendOtp)}
+          autoComplete="off"
           className="space-y-4 flex flex-col"
         >
           {(otpError || emailForm.formState.errors.root) && (
@@ -242,6 +267,7 @@ export const SignupPage = () => {
       >
         <form
           onSubmit={otpForm.handleSubmit(handleVerifyOtp)}
+          autoComplete="off"
           className="space-y-4 flex flex-col"
         >
           {otpError && (
@@ -252,6 +278,8 @@ export const SignupPage = () => {
           <Input
             label="Verification Code"
             type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
             placeholder="Enter 6-digit code"
             registration={otpForm.register("otp", {
               required: "OTP is required",
@@ -304,7 +332,9 @@ export const SignupPage = () => {
       subtitle="Almost there! Fill in your details"
     >
       <form
+        key="details-form"
         onSubmit={detailsForm.handleSubmit(handleRegister)}
+        autoComplete="off"
         className="space-y-4 flex flex-col"
       >
         {detailsForm.formState.errors.root && (
@@ -314,6 +344,7 @@ export const SignupPage = () => {
         )}
         <Input
           label="Full Name"
+          autoComplete="off"
           placeholder="John Doe"
           registration={detailsForm.register("name", {
             required: "Name is required",

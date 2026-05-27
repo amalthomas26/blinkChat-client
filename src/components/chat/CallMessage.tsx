@@ -26,10 +26,10 @@ export function CallMessage({ message, isOwn }: CallMessageProps) {
   const isEnded = status === "ended";
 
   // Choose icon
-  let Icon = callType === "video" ? Video : Phone;
-  if (isMissed) Icon = PhoneMissed;
-  else if (isOwn) Icon = PhoneOutgoing;
-  else Icon = PhoneIncoming;
+  const Icon =
+    isMissed ? PhoneMissed :
+    isOwn    ? PhoneOutgoing :
+    PhoneIncoming;
 
   // Color scheme
   const iconColor = isMissed || isFailed

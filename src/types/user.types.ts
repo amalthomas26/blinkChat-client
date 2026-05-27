@@ -2,12 +2,14 @@ export interface UserProfileDto {
   id: string;
   name: string;
   email: string;
+  username?: string | null;
   avatar: string;
   bio: string | null;
   status: "online" | "offline" | "away";
   lastSeen: string | null;
   provider: "local" | "google";
-  createAt: string;
+  isEmailVerified: boolean;
+  createdAt: string;
 }
 
 export interface PublicUserProfileDto {
@@ -32,4 +34,5 @@ export interface UpdateProfileInput {
   bio?: string;
   avatar?: string;
   avatarPublicId?: string;
+  username?: string;
 }

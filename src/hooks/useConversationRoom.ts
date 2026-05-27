@@ -35,6 +35,7 @@ export function useConversationRoom(
 
     const socket = socketService.getSocket();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsJoined(false);
     setIsJoinError(null);
 

@@ -1,9 +1,7 @@
 import { useCallStore } from "../store/call.store";
 import type {
   CallIncomingPayload,
-  CallAcceptedPayload,
   CallEndedPayload,
-  CallReconnectingPayload,
   CallFailedPayload,
   WebRTCOfferPayload,
   WebRTCAnswerPayload,
@@ -379,11 +377,11 @@ export const useSocket = () => {
       notificationStore.markSourceSeen(sourceKey);
     };
 
-    const handleCallRinging = (_payload: { callId: string }) => {
+    const handleCallRinging = () => {
       useCallStore.getState().setPeerRinging();
     };
 
-    const handleCallAccepted = (_payload: CallAcceptedPayload) => {
+    const handleCallAccepted = () => {
       useCallStore.getState().setConnecting();
     };
 
@@ -392,7 +390,7 @@ export const useSocket = () => {
       window.dispatchEvent(new CustomEvent("call:cleanup"));
     };
 
-    const handleCallReconnecting = (_payload: CallReconnectingPayload) => {
+    const handleCallReconnecting = () => {
       useCallStore.getState().setReconnecting();
     };
 
@@ -512,6 +510,32 @@ export const useSocket = () => {
         // This is a REconnect — re-fetch conversations to pick up
         // any messages that arrived while the socket was disconnected.
         useConversationStore.getState().fetchConversations();
+
+        // MAJ-7: Backfill missed messages for the currently open conversation.
+        // Without this, the conversation list updates but the open chat's
+        // message list has a gap for the disconnected period.
+        const activeConvId =
+          useNotificationStore.getState().activeConversationId;
+        if (activeConvId) {
+          const msgState = useMessageStore.getState();
+          const ids = msgState.idsByConversation[activeConvId] ?? [];
+          const lastMessageId = ids.length > 0 ? ids[ids.length - 1] : undefined;
+
+          socket.emit(
+            "sync_messages",
+            { conversationId: activeConvId, lastMessageId, limit: 50 },
+            (res) => {
+              if (!res.success || !("data" in res)) return;
+              const messages = res.data as MessageDto[];
+              const store = useMessageStore.getState();
+              for (const msg of messages) {
+                if (!store.byId[msg._id]) {
+                  store.addMessage(msg);
+                }
+              }
+            },
+          );
+        }
       }
       hasConnectedOnce = true;
     };

@@ -9,6 +9,7 @@ export interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitializing: boolean;
   error: string | null;
 }
 
@@ -19,6 +20,8 @@ export interface AuthActions {
   logout: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
+  setAccessToken: (token: string | null) => void;
+  initAuth: () => Promise<void>;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -28,6 +31,7 @@ const initialState: AuthState = {
   accessToken: null,
   isAuthenticated: false,
   isLoading: false,
+  isInitializing: true,
   error: null,
 };
 
@@ -56,10 +60,11 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
           const response = await authService.register(data);
+          // Note: register endpoint returns user data only, no accessToken.
+          // The user must log in separately after registering to get a token.
           set({
             user: response.data.user,
-            accessToken: response.data.accessToken,
-            isAuthenticated: true,
+            isAuthenticated: false, // not authenticated until they log in
             isLoading: false,
           });
         } catch (error: unknown) {
@@ -92,12 +97,10 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true, error: null });
           await authService.logout();
-          set({ ...initialState });
-        } catch (error: unknown) {
-          const message =
-            error instanceof ApiError ? error.message : "Logout failed";
-          set({ error: message, isLoading: false });
-          set({ ...initialState }); // Force logout on client anyway
+        } catch {
+          // Ignore logout errors — force clear the client state anyway
+        } finally {
+          set({ ...initialState, isInitializing: false });
         }
       },
       clearError: () => set({ error: null }),
@@ -107,12 +110,40 @@ export const useAuthStore = create<AuthStore>()(
           user,
           isAuthenticated: !!user,
         }),
+
+      setAccessToken: (token: string | null) =>
+        set({ accessToken: token }),
+
+      // Called once on app startup. If localStorage says we're
+      // authenticated but the in-memory access token is gone (page
+      // refresh), silently obtain a fresh one via the httpOnly cookie.
+      initAuth: async () => {
+        const { isAuthenticated, accessToken } = useAuthStore.getState();
+        if (!isAuthenticated || accessToken) {
+          set({ isInitializing: false });
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${(await import("../config/env")).env.API_URL}/auth/refresh`,
+            { method: "POST", credentials: "include" },
+          );
+          if (!res.ok) throw new Error("refresh failed");
+          const body = await res.json();
+          set({ accessToken: body.data.accessToken, isInitializing: false });
+        } catch {
+          // Refresh cookie is gone / expired → force logout
+          set({ ...initialState, isInitializing: false });
+        }
+      },
     }),
     {
       name: "blinkchat-auth",
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
+        // accessToken is intentionally NOT persisted — it lives in
+        // memory only, so an XSS attack cannot steal it from localStorage.
         isAuthenticated: state.isAuthenticated,
       }),
     }

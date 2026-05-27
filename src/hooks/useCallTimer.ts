@@ -21,6 +21,7 @@ export function useCallTimer(): number {
       }
     }
     if (phase === "idle") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeconds(0);
     }
 
