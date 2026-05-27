@@ -3,8 +3,10 @@ import {socketService} from "../services/socket.service";
 import {useCallStore} from "../store/call.store";
 import type {CallType} from "../types/call.types";
 
+// Stable module-level reference — useCallStore never changes between renders.
+const store = useCallStore;
+
 export function useCallActions() {
-  const store = useCallStore;
 
   const initiateCall = useCallback(
     (peerId: string, peerName: string, peerAvatar: string, callType: CallType) => {
@@ -33,7 +35,8 @@ export function useCallActions() {
         },
       );
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store],
   );
 
   const acceptCall = useCallback(async () => {
@@ -62,7 +65,8 @@ export function useCallActions() {
       }
       store.getState().setConnecting();
     });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store]);
 
   const rejectCall = useCallback(() => {
     const { callId } = store.getState();
@@ -71,7 +75,8 @@ export function useCallActions() {
 
     socket.emit("call:reject", { callId });
     store.getState().endCall("Call rejected");
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store]);
 
   const endCall = useCallback(() => {
     const { callId } = store.getState();
@@ -80,7 +85,8 @@ export function useCallActions() {
 
     socket.emit("call:end", { callId });
     store.getState().endCall("Call ended");
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store]);
 
   return { initiateCall, acceptCall, rejectCall, endCall };
 }

@@ -106,8 +106,6 @@ export function useWebRTC() {
   const statsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const iceConfigRef = useRef<IceConfigDto | null>(null);
 
-  const getStore = useCallStore.getState;
-
   const cleanup = useCallback(() => {
     if (disconnectTimerRef.current) {
       clearTimeout(disconnectTimerRef.current);
@@ -272,7 +270,8 @@ export function useWebRTC() {
       }
       cleanup();
     }
-  }, [createPC, cleanup]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createPC, cleanup, getStore]);
 
   const handleOffer = useCallback(
     async (sdp: string) => {
@@ -330,7 +329,8 @@ export function useWebRTC() {
         cleanup();
       }
     },
-    [createPC, cleanup],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [createPC, cleanup, getStore],
   );
 
   const handleAnswer = useCallback(async (sdp: string) => {
@@ -351,7 +351,8 @@ export function useWebRTC() {
       getStore().setFailed("Failed to process answer");
       cleanup();
     }
-  }, [cleanup]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanup, getStore]);
 
   const handleIceCandidate = useCallback(
     async (candidate: RTCIceCandidateInit) => {
@@ -378,7 +379,8 @@ export function useWebRTC() {
       track.enabled = !track.enabled;
       getStore().toggleLocalAudio();
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
 
   const toggleVideo = useCallback(() => {
     const stream = getStore().localStream;
@@ -388,7 +390,8 @@ export function useWebRTC() {
       track.enabled = !track.enabled;
       getStore().toggleLocalVideo();
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
 
   const switchCamera = useCallback(async () => {
     const pc = pcRef.current;
@@ -418,7 +421,8 @@ export function useWebRTC() {
     } catch (err) {
       console.warn("[switchCamera] failed:", err);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
 
   useEffect(() => cleanup, [cleanup]);
 
@@ -437,7 +441,8 @@ export function useWebRTC() {
     };
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getStore]);
 
   return {
     startCall,
