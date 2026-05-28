@@ -7,13 +7,25 @@ export default defineConfig({
   server: {
     allowedHosts: [".ngrok-free.dev"],
     proxy: {
-      // Routes standard HTTP requests to your backend
-      "/api": "http://localhost:5000",
-      // Routes real-time WebSocket traffic to your backend
+      // Routes standard HTTP requests to your backend.
+      // changeOrigin: rewrites the Host header so Express sees localhost:5000.
+      // cookieDomainRewrite: ensures Set-Cookie headers from Express (domain:
+      // localhost:5000) are rewritten to "" so the browser stores them for
+      // localhost:5173 — without this the refresh token cookie is silently
+      // dropped and every page refresh triggers a 401 on /auth/refresh.
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        cookieDomainRewrite: "",
+      },
+      // Routes real-time WebSocket traffic to your backend.
       "/socket.io": {
         target: "http://localhost:5000",
+        changeOrigin: true,
+        cookieDomainRewrite: "",
         ws: true,
       },
     },
   },
 });
+

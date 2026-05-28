@@ -15,12 +15,21 @@ export class ApiError extends Error {
 }
 
 function handleUnauthorized(): void {
+  // Clear the full auth state (including localStorage via zustand persist)
+  // before navigating away. We import lazily to avoid circular-dep issues.
   import("../store/auth.store").then(({ useAuthStore }) => {
-    const { setUser, setAccessToken } = useAuthStore.getState();
-    setAccessToken(null);
-    setUser(null);
+    // Reset to a clean unauthenticated state. This also wipes the
+    // persisted localStorage entry so initAuth won't try a stale refresh.
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+      isInitializing: false,
+      error: null,
+    });
+    window.location.href = "/login";
   });
-  window.location.href = "/login";
 }
 
 // ── Token refresh mutex ──────────────────────────────────────────

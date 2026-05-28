@@ -11,6 +11,12 @@ const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
       : "border-transparent bg-transparent hover:bg-white/5 hover:text-white",
   );
 
+const mobileNavLinkClassName = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    "flex flex-col items-center gap-1 px-4 py-1 text-xs transition-colors",
+    isActive ? "text-[#c4b5fd]" : "text-slate-400",
+  );
+
 export function SidebarNav() {
   const user = useAuthUser();
   const userInitial = user?.name?.charAt(0).toUpperCase() ?? "U";
@@ -29,15 +35,12 @@ export function SidebarNav() {
               <MessageSquareText className="h-5 w-5" />
             </NavLink>
 
-            <button
-              type="button"
-              disabled
-              className="flex h-11 w-11 items-center justify-center rounded-2xl text-slate-500"
-            >
+            <NavLink to="/settings" className={navLinkClassName}>
               <Settings className="h-5 w-5" />
-            </button>
+            </NavLink>
           </div>
         </div>
+
         <NavLink
           to="/profile"
           className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd] transition-opacity hover:opacity-80 overflow-hidden"
@@ -50,36 +53,22 @@ export function SidebarNav() {
         </NavLink>
       </div>
 
-      {/* Mobile: horizontal bottom tab bar — pinned to bottom of sidebar */}
+      {/* Mobile: horizontal bottom tab bar */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-[#273244] bg-[#101620] px-4 py-2 md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
       >
-        <NavLink
-          to="/chat"
-          className={({ isActive }) =>
-            cn(
-              "flex flex-col items-center gap-1 px-4 py-1 text-xs transition-colors",
-              isActive ? "text-[#c4b5fd]" : "text-slate-400",
-            )
-          }
-        >
+        <NavLink to="/chat" className={mobileNavLinkClassName}>
           <MessageSquareText className="h-5 w-5" />
           <span>Chats</span>
         </NavLink>
 
-        <button
-          type="button"
-          disabled
-          className="flex flex-col items-center gap-1 px-4 py-1 text-xs text-slate-600"
-        >
+        <NavLink to="/settings" className={mobileNavLinkClassName}>
           <Settings className="h-5 w-5" />
           <span>Settings</span>
-        </button>
-        <NavLink
-          to="/profile"
-          className="flex flex-col items-center gap-1 px-4 py-1"
-        >
+        </NavLink>
+
+        <NavLink to="/profile" className="flex flex-col items-center gap-1 px-4 py-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd] overflow-hidden">
             {user?.avatar ? (
               <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />

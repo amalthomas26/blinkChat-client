@@ -6,7 +6,6 @@ import { userService } from "../../services/user.service";
 import { SecuritySettings } from "./sections/SecuritySettings";
 import { NotificationSettings } from "./sections/NotificationSettings";
 import { PrivacySettings } from "./sections/PrivacySettings";
-import { AppearanceSettings } from "./sections/AppearanceSettings";
 import { DangerZoneSettings } from "./sections/DangerZoneSettings";
 import type { NotificationPrefs, PrivacyPrefs } from "../../types/auth.types";
 
@@ -137,8 +136,6 @@ export function SettingsPage() {
                         prefs={privacyPrefs}
                         onPrefsChange={setPrivacyPrefs}
                     />
-
-                    <AppearanceSettings />
 
                     <DangerZoneSettings />
                 </div>

@@ -7,6 +7,7 @@ import { conversationService } from "../../services/conversation.service";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useConversationActions } from "../../store/conversation.selectors";
 import { ApiError } from "../../lib/api";
+import {CreateGroupModal} from "./CreateGroupModal"
 
 interface SearchPanelProps {
   open: boolean;
@@ -22,6 +23,8 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -128,7 +131,7 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
         <div className="px-6 pb-6">
           <button
             type="button"
-            disabled
+            onClick={() => setShowCreateGroup(true)}
             className="mb-5 flex h-11 w-full items-center gap-3 rounded-2xl border border-[#273244] bg-[#101620] px-4 text-left text-sm font-medium text-white"
           >
             <Users className="h-4 w-4 text-slate-400" />
@@ -217,6 +220,12 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
               : null}
           </div>
         </div>
+        {showCreateGroup && (
+          <CreateGroupModal onClose={() => setShowCreateGroup(false)} />
+        )}
+
+   
+
       </div>
     </div>
   );

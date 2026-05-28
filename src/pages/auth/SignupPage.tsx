@@ -1,6 +1,6 @@
 // client/src/pages/auth/SignupPage.tsx
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect,useCallback} from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../../components/auth/AuthLayout";
