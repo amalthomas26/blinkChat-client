@@ -29,3 +29,32 @@ export function formatDateSeparator(value: string): string {
     year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
   }).format(date);
 }
+
+export function formatLastSeen(value: string): string {
+  const date = new Date(value);
+  const today = new Date();
+  
+  const timeStr = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Last seen today at ${timeStr}`;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Last seen yesterday at ${timeStr}`;
+  }
+
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  }).format(date);
+
+  return `Last seen ${dateStr} at ${timeStr}`;
+}

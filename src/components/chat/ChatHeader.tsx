@@ -6,6 +6,7 @@ import { useIsOnline } from "../../store/presence.selectors";
 import { Image as ImageIcon } from "lucide-react";
 import { useCallActions } from "../../hooks/useCallActions";
 import { ChatOptionsMenu } from "./ChatOptionsMenu";
+import { formatLastSeen } from "../../lib/date";
 
 interface ChatHeaderProps {
   conversation: ConversationListItemDto | undefined;
@@ -55,7 +56,9 @@ export function ChatHeader({
       ? "Online"
       : conversation?.type === "group"
         ? `${conversation.participants.length} members`
-        : "Offline";
+        : conversation?.peer?.lastSeen
+          ? formatLastSeen(conversation.peer.lastSeen)
+          : "Offline";
 
   const { initiateCall } = useCallActions();
   const navigate = useNavigate();

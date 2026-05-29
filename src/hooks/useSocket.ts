@@ -319,6 +319,7 @@ export const useSocket = () => {
 
     const handleOffline = (payload: { userId: string }) => {
       usePresenceStore.getState().setOffline(payload.userId);
+      useConversationStore.getState().updatePeerLastSeen(payload.userId, new Date().toISOString());
     };
 
     const handleReactionAdded = (payload: {

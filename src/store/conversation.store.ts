@@ -42,6 +42,7 @@ export interface ConversationActions {
   ) => void;
   updateGroupName: (convId: string, name: string) => void;
   updateGroupAvatar: (convId: string, groupAvatar: string | null) => void;
+  updatePeerLastSeen: (peerId: string, lastSeen: string) => void;
 }
 
 export type ConversationStore = ConversationState & ConversationActions;
@@ -322,6 +323,26 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
           [convId]: { ...conv, groupAvatar },
         },
       };
+    });
+  },
+
+  updatePeerLastSeen: (peerId, lastSeen) => {
+    set((state) => {
+      let hasChanges = false;
+      const newById = { ...state.byId };
+
+      for (const conv of Object.values(newById)) {
+        if (conv.peer?.id === peerId) {
+          newById[conv.id] = {
+            ...conv,
+            peer: { ...conv.peer, lastSeen },
+          };
+          hasChanges = true;
+        }
+      }
+
+      if (!hasChanges) return state;
+      return { byId: newById };
     });
   },
 }));
