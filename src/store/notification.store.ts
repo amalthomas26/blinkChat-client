@@ -13,7 +13,6 @@ interface NotificationState {
   orderedIds: string[];
   seenSourceKeys: Set<string>;
   activeConversationId: string | null;
-  activeConversationId: string | null;
   browserPermission: BrowserNotificationPermission;
   isGlobalMuted: boolean;
 }

@@ -1,4 +1,4 @@
-import { MessageSquare } from "lucide-react";
+import { BlinkChatLogo } from "../ui/BlinkChatLogo";
 
 interface AuthLayoutProps {
   title: string;
@@ -14,9 +14,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   return (
     <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center p-4 selection:bg-purple-500/30">
       <div className="w-full max-w-[440px] flex flex-col items-center">
-        <div className="w-12 h-12 bg-[#8b5cf6] rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
-          <MessageSquare className="text-white" size={24} strokeWidth={2.5} />
-        </div>
+
+        
+        <BlinkChatLogo size={56} entrance />
+        <p className="mt-3 mb-6 text-base font-bold tracking-[0.18em] text-[#c4b5fd] uppercase select-none">
+          BlinkChat
+        </p>
 
         <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
         <p className="text-slate-400 text-sm mb-8">{subtitle}</p>

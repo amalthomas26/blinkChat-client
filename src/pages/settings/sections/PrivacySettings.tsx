@@ -75,19 +75,58 @@ export function PrivacySettings({
 
 
 
+interface BlockedUserProfile {
+    id: string;
+    name: string;
+    avatar: string;
+}
+
+function getInitials(name: string): string {
+    return name
+        .split(" ")
+        .slice(0, 2)
+        .map((p) => p.charAt(0).toUpperCase())
+        .join("");
+}
+
 function BlockedUsersList() {
-    const [blockedIds, setBlockedIds] = useState<string[]>([]);
+    const [blockedUsers, setBlockedUsers] = useState<BlockedUserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [unblocking, setUnblocking] = useState<string | null>(null);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const fetchBlocked = useCallback(async () => {
         setIsLoading(true);
+        setFetchError(null);
         try {
             const res = await userService.getBlockedUsers();
-            setBlockedIds(res.data);
+            const ids = res.data;
+
+            if (ids.length === 0) {
+                setBlockedUsers([]);
+                return;
+            }
+
+            // Fetch name + avatar for each blocked user in parallel
+            const profiles = await Promise.allSettled(
+                ids.map((id) => userService.getUserById(id)),
+            );
+
+            const resolved: BlockedUserProfile[] = profiles
+                .map((result, i) => {
+                    if (result.status === "fulfilled") {
+                        const d = result.value.data;
+                        return { id: d.id, name: d.name, avatar: d.avatar ?? "" };
+                    }
+                    // If profile fetch failed (e.g. user deleted), show ID as fallback
+                    return { id: ids[i], name: ids[i].slice(-8), avatar: "" };
+                });
+
+            setBlockedUsers(resolved);
         } catch (err) {
             console.error("[BlockedUsersList] fetch failed:", err);
+            setFetchError("Failed to load blocked users");
         } finally {
             setIsLoading(false);
         }
@@ -103,7 +142,7 @@ function BlockedUsersList() {
         setUnblocking(userId);
         try {
             await userService.unblockUser(userId);
-            setBlockedIds((prev) => prev.filter((id) => id !== userId));
+            setBlockedUsers((prev) => prev.filter((u) => u.id !== userId));
         } catch (err) {
             console.error("[BlockedUsersList] unblock failed:", err);
         } finally {
@@ -122,7 +161,7 @@ function BlockedUsersList() {
                     <span>Blocked users</span>
                 </div>
                 <span className="text-xs text-slate-500">
-                    {isExpanded ? "Hide" : `${blockedIds.length > 0 ? blockedIds.length : ""}`}
+                    {isExpanded ? "Hide" : blockedUsers.length > 0 ? blockedUsers.length : ""}
                 </span>
             </button>
 
@@ -134,27 +173,47 @@ function BlockedUsersList() {
                         </div>
                     )}
 
-                    {!isLoading && blockedIds.length === 0 && (
+                    {!isLoading && fetchError && (
+                        <p className="text-xs text-red-400 text-center py-2">{fetchError}</p>
+                    )}
+
+                    {!isLoading && !fetchError && blockedUsers.length === 0 && (
                         <p className="text-sm text-slate-500 text-center py-2">
                             No blocked users
                         </p>
                     )}
 
                     {!isLoading &&
-                        blockedIds.map((userId) => (
+                        blockedUsers.map((user) => (
                             <div
-                                key={userId}
-                                className="flex items-center justify-between rounded-lg bg-[#0a0f1a]/60 p-3 border border-slate-800/40"
+                                key={user.id}
+                                className="flex items-center gap-3 rounded-lg bg-[#0a0f1a]/60 p-3 border border-slate-800/40"
                             >
-                                <p className="text-sm text-slate-300 truncate font-mono">
-                                    {userId}
+                                {/* Avatar */}
+                                <div className="shrink-0">
+                                    {user.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt={user.name}
+                                            className="h-9 w-9 rounded-full object-cover border border-slate-700"
+                                        />
+                                    ) : (
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2a2247] text-xs font-semibold text-[#c4b5fd]">
+                                            {getInitials(user.name)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="flex-1 min-w-0 text-sm text-slate-300 truncate font-medium">
+                                    {user.name}
                                 </p>
+
                                 <button
-                                    onClick={() => handleUnblock(userId)}
-                                    disabled={unblocking === userId}
+                                    onClick={() => handleUnblock(user.id)}
+                                    disabled={unblocking === user.id}
                                     className="shrink-0 rounded-md bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-600 disabled:opacity-50 transition-colors"
                                 >
-                                    {unblocking === userId ? (
+                                    {unblocking === user.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin" />
                                     ) : (
                                         "Unblock"

@@ -1,7 +1,8 @@
-import { House, MessageSquareText, Settings } from "lucide-react";
+import { MessageSquareText, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuthUser } from "../../store/auth.selectors";
 import { cn } from "../../lib/utils";
+import { BlinkChatLogo } from "../ui/BlinkChatLogo";
 
 const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -23,12 +24,24 @@ export function SidebarNav() {
 
   return (
     <>
-      {/* Desktop: vertical left rail */}
+      
       <div className="hidden w-24 shrink-0 border-r border-[#273244] bg-[#101620] md:flex md:flex-col md:items-center md:justify-between md:py-6">
         <div className="flex flex-col items-center gap-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#8b5cf6] text-white shadow-lg shadow-[#8b5cf6]/20">
-            <House className="h-5 w-5" />
-          </div>
+
+          <NavLink
+            to="/chat"
+            className="group flex flex-col items-center gap-1.5 outline-none"
+            aria-label="BlinkChat home"
+          >
+            <BlinkChatLogo
+              size={38}
+              animated
+              className="transition-transform duration-200 group-hover:scale-110"
+            />
+            <span className="select-none text-[10px] font-bold tracking-[0.14em] text-[#c4b5fd] uppercase transition-colors group-hover:text-white">
+              BlinkChat
+            </span>
+          </NavLink>
 
           <div className="flex flex-col gap-4">
             <NavLink to="/chat" className={navLinkClassName}>
@@ -53,14 +66,19 @@ export function SidebarNav() {
         </NavLink>
       </div>
 
-      {/* Mobile: horizontal bottom tab bar */}
+      {/* ── Mobile: horizontal bottom tab bar ───────────────────────── */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-[#273244] bg-[#101620] px-4 py-2 md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
       >
+        {/* Logo replaces the generic Chats tab icon on mobile */}
         <NavLink to="/chat" className={mobileNavLinkClassName}>
-          <MessageSquareText className="h-5 w-5" />
-          <span>Chats</span>
+          {({ isActive }) => (
+            <>
+              <BlinkChatLogo size={26} animated={isActive} />
+              <span>Home</span>
+            </>
+          )}
         </NavLink>
 
         <NavLink to="/settings" className={mobileNavLinkClassName}>
@@ -81,3 +99,4 @@ export function SidebarNav() {
     </>
   );
 }
+

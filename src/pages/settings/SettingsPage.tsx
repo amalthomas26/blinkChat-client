@@ -37,20 +37,30 @@ export function SettingsPage() {
                 if (cancelled) return;
                 const data = res.data;
                 setTwoFactorEnabled(data.twoFactorEnabled ?? false);
-                setNotificationPrefs(
-                    data.notificationPrefs ?? {
-                        browserNotifications: true,
-                        sounds: true,
-                        muteAll: false,
-                    },
-                );
-                setPrivacyPrefs(
-                    data.privacyPrefs ?? {
-                        showOnlineStatus: true,
-                        showLastSeen: true,
-                    },
-                );
+
+                const loadedNotifPrefs = data.notificationPrefs ?? {
+                    browserNotifications: true,
+                    sounds: true,
+                    muteAll: false,
+                };
+                const loadedPrivacyPrefs = data.privacyPrefs ?? {
+                    showOnlineStatus: true,
+                    showLastSeen: true,
+                };
+
+                setNotificationPrefs(loadedNotifPrefs);
+                setPrivacyPrefs(loadedPrivacyPrefs);
                 setIsGoogleUser(data.provider === "google");
+
+                // Sync prefs into auth store so the notification dispatcher
+                // can read them via useAuthStore.getState().user
+                if (user) {
+                    setUser({
+                        ...user,
+                        notificationPrefs: loadedNotifPrefs,
+                        privacyPrefs: loadedPrivacyPrefs,
+                    });
+                }
             })
             .catch((err) => {
                 if (cancelled) return;
@@ -63,15 +73,31 @@ export function SettingsPage() {
         return () => {
             cancelled = true;
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleTwoFactorChange = useCallback(
         (enabled: boolean) => {
             setTwoFactorEnabled(enabled);
+            if (user) setUser({ ...user, twoFactorEnabled: enabled });
+        },
+        [user, setUser],
+    );
 
-            if (user) {
-                setUser({ ...user, twoFactorEnabled: enabled });
-            }
+    // When notification prefs change (after successful PATCH), also sync to auth store
+    const handleNotificationPrefsChange = useCallback(
+        (prefs: NotificationPrefs) => {
+            setNotificationPrefs(prefs);
+            if (user) setUser({ ...user, notificationPrefs: prefs });
+        },
+        [user, setUser],
+    );
+
+    // When privacy prefs change (after successful PATCH), also sync to auth store
+    const handlePrivacyPrefsChange = useCallback(
+        (prefs: PrivacyPrefs) => {
+            setPrivacyPrefs(prefs);
+            if (user) setUser({ ...user, privacyPrefs: prefs });
         },
         [user, setUser],
     );
@@ -129,12 +155,12 @@ export function SettingsPage() {
 
                     <NotificationSettings
                         prefs={notificationPrefs}
-                        onPrefsChange={setNotificationPrefs}
+                        onPrefsChange={handleNotificationPrefsChange}
                     />
 
                     <PrivacySettings
                         prefs={privacyPrefs}
-                        onPrefsChange={setPrivacyPrefs}
+                        onPrefsChange={handlePrivacyPrefsChange}
                     />
 
                     <DangerZoneSettings />
