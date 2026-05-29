@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "../../../components/ui/icons";
 import { SettingsSection } from "../../../components/ui/SettingsSection";
 import { userService } from "../../../services/user.service";
 import { useAuthStore } from "../../../store/auth.store";

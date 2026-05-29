@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../../store/auth.store";
 import { useNavigate } from "react-router-dom";
-import { X, Search, Users, Check } from "lucide-react";
+import { X, Search, Users, Check } from "../ui/icons";
 import { userService } from "../../services/user.service";
 import { conversationService } from "../../services/conversation.service";
 import { useConversationActions } from "../../store/conversation.selectors";
@@ -32,15 +32,10 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
     if (!trimmed) {
-      setSearchResults([]);
-      setSearchError(null);
-      setIsSearching(false);
       return;
     }
 
     const controller = new AbortController();
-    setIsSearching(true);
-    setSearchError(null);
 
     userService
       .searchUser(trimmed, controller.signal)
@@ -196,8 +191,17 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                 type="text"
                 value={query}
                 onChange={(e) => {
-                  setQuery(e.target.value);
+                  const val = e.target.value;
+                  setQuery(val);
                   setCreateError(null);
+                  if (!val.trim()) {
+                    setSearchResults([]);
+                    setSearchError(null);
+                    setIsSearching(false);
+                  } else {
+                    setIsSearching(true);
+                    setSearchError(null);
+                  }
                 }}
                 placeholder="Search users by name..."
                 className="h-full flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"

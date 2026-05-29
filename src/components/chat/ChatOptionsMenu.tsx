@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BellOff, Bell, Pin, PinOff, Trash2, Info, Eraser } from "lucide-react";
+import { BellOff, Bell, Pin, PinOff, Trash2, Info, Eraser } from "../ui/icons";
 import type { ConversationListItemDto } from "../../types";
 
 interface ChatOptionsMenuProps {

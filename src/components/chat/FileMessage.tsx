@@ -1,4 +1,4 @@
-import { FileDown } from "lucide-react";
+import { FileDown } from "../ui/icons";
 import { formatFileSize } from "../../lib/media";
 
 interface FileMessageProps {

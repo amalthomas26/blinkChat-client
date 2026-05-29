@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { X, Image as ImageIcon } from "lucide-react";
+import { X, Image as ImageIcon } from "../ui/icons";
 import { useMessageStore } from "../../store/message.store";
 import { useMessageIds } from "../../store/message.selectors";
 import { MessageType } from "../../types";

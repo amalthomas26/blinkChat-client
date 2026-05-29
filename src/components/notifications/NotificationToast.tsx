@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Phone, PhoneMissed, X } from "lucide-react";
+import { Phone, PhoneMissed, X } from "../ui/icons";
 import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppNotificationKind, type AppNotification } from "../../types";

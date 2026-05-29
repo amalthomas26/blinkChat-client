@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play } from "../ui/icons";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { formatAudioTime } from "../../lib/media";
 

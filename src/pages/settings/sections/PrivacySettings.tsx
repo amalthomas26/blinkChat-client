@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Lock, Loader2, UserX } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Lock, Loader2, UserX } from "../../../components/ui/icons";
 import { SettingsSection } from "../../../components/ui/SettingsSection";
 import { SettingsToggle } from "../../../components/ui/SettingsToggle";
 import { userService } from "../../../services/user.service";
@@ -132,11 +132,13 @@ function BlockedUsersList() {
         }
     }, []);
 
-    useEffect(() => {
-        if (isExpanded) {
-            fetchBlocked();
+    const handleToggleExpand = () => {
+        const next = !isExpanded;
+        setIsExpanded(next);
+        if (next) {
+            void fetchBlocked();
         }
-    }, [isExpanded, fetchBlocked]);
+    };
 
     const handleUnblock = async (userId: string) => {
         setUnblocking(userId);
@@ -153,7 +155,7 @@ function BlockedUsersList() {
     return (
         <div className="py-3">
             <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={handleToggleExpand}
                 className="flex w-full items-center justify-between text-sm font-medium text-slate-200 hover:text-white transition-colors"
             >
                 <div className="flex items-center gap-2">

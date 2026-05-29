@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "./icons";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "../../lib/utils.ts";
 

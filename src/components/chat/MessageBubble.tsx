@@ -1,5 +1,5 @@
 import { memo, useMemo, useState, useCallback, useEffect } from "react";
-import { Check, CheckCheck, RotateCcw, MoreHorizontal } from "lucide-react";
+import { Check, CheckCheck, RotateCcw, MoreHorizontal } from "../ui/icons";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
 import type { ConversationListUserDto } from "../../types";
 import { MessageType } from "../../types";

@@ -1,4 +1,4 @@
-import { Phone, PhoneOff } from "lucide-react";
+import { Phone, PhoneOff } from "../ui/icons";
 import { useCallPeer, useCallType } from "../../store/call.selectors";
 import { useCallActions } from "../../hooks/useCallActions";
 

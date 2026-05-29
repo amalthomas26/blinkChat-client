@@ -1,4 +1,4 @@
-import { Search, Users, X } from "lucide-react";
+import { Search, Users, X } from "../ui/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { UserSearchResultDto } from "../../types";

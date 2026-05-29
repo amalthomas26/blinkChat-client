@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X } from "./icons";
 
 interface AvatarViewerProps {
   src: string | null;

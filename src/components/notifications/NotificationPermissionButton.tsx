@@ -1,4 +1,4 @@
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff } from "../ui/icons";
 import { browserNotificationService } from "../../services/browserNotification.service";
 import { useBrowserNotificationPermission } from "../../store/notification.selectors";
 import { useNotificationStore } from "../../store/notification.store";

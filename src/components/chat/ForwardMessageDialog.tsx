@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X } from "../ui/icons";
 import { useConversations } from "../../hooks/useConversations";
 import type { ConversationListItemDto } from "../../types";
 

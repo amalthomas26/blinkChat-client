@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { Plus, Search } from "../ui/icons";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { ConversationList } from "../chat/ConversationList";

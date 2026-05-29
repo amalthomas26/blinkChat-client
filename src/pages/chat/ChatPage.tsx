@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MessageSquareText } from "lucide-react";
+import { MessageSquareText } from "../../components/ui/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChatLayout } from "../../components/layout/ChatLayout";
 import { Sidebar } from "../../components/layout/Sidebar";

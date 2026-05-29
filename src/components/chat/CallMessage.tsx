@@ -1,4 +1,4 @@
-import { PhoneMissed, PhoneIncoming, PhoneOutgoing } from "lucide-react";
+import { PhoneMissed, PhoneIncoming, PhoneOutgoing } from "../ui/icons";
 import type { MessageDto } from "../../types";
 import { formatMessageTime } from "../../lib/date";
 

@@ -1,4 +1,4 @@
-import { Image, Mic, Paperclip, Send, Smile, X } from "lucide-react";
+import { Image, Mic, Paperclip, Send, Smile, X } from "../ui/icons";
 import { useRef, useState, useEffect, useCallback } from "react";
 import {
   MessageType,

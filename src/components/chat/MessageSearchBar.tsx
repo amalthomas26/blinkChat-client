@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { ArrowLeft, ChevronUp, ChevronDown, Loader2, Search } from "lucide-react";
+import { ArrowLeft, ChevronUp, ChevronDown, Loader2, Search } from "../ui/icons";
 
 interface MessageSearchBarProps {
   query: string;

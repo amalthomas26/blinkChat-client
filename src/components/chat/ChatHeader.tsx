@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, History, Search } from "lucide-react";
+import { ArrowLeft, MoreVertical, Phone, Video, History, Search, Image as ImageIcon } from "../ui/icons";
 import { Link, useNavigate } from "react-router-dom";
 import type { ConversationListItemDto } from "../../types";
 import { useIsOnline } from "../../store/presence.selectors";
-import { Image as ImageIcon } from "lucide-react";
 import { useCallActions } from "../../hooks/useCallActions";
 import { ChatOptionsMenu } from "./ChatOptionsMenu";
 import { formatLastSeen } from "../../lib/date";

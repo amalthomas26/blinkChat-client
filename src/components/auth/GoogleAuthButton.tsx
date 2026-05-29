@@ -5,7 +5,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-export const GoogleAuthButton: React.FC<Props> = ({ onSuccess, isLoading }) => {
+export const GoogleAuthButton: React.FC<Props> = ({ onSuccess }) => {
   return (
     <GoogleLogin
       onSuccess={(credentialResponse) => {

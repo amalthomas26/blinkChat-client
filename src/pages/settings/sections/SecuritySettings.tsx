@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   Shield,
   Eye,
@@ -9,7 +9,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronUp,
-} from "lucide-react";
+} from "../../../components/ui/icons";
 import { SettingsSection } from "../../../components/ui/SettingsSection";
 import { SettingsToggle } from "../../../components/ui/SettingsToggle";
 import { userService } from "../../../services/user.service";
@@ -382,11 +382,13 @@ function ActiveSessions() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isExpanded) {
-      fetchSessions();
+  const handleToggleExpand = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    if (next) {
+      void fetchSessions();
     }
-  }, [isExpanded, fetchSessions]);
+  };
 
   const handleRevoke = async (sessionId: string) => {
     setRevoking(sessionId);
@@ -420,7 +422,7 @@ function ActiveSessions() {
   return (
     <div className="py-3">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggleExpand}
         className="flex w-full items-center justify-between text-sm font-medium text-slate-200 hover:text-white transition-colors"
       >
         <span>Active sessions</span>

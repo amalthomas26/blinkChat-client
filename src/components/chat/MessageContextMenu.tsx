@@ -1,4 +1,4 @@
-import { CornerUpLeft, Forward, Trash2, Copy, Plus } from "lucide-react";
+import { CornerUpLeft, Forward, Trash2, Copy, Plus } from "../ui/icons";
 import { useRef, useState, useEffect } from "react";
 import { ReactionPicker } from "./ReactionPicker";
 

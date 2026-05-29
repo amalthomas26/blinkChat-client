@@ -7,7 +7,7 @@ import {
   Volume2,
   VolumeX,
   SwitchCamera,
-} from "lucide-react";
+} from "../ui/icons";
 
 interface CallControlsProps {
   isAudioEnabled: boolean;

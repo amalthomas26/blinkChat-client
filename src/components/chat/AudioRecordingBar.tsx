@@ -1,4 +1,4 @@
-import { Mic, Send, X } from "lucide-react";
+import { Mic, Send, X } from "../ui/icons";
 import { formatAudioTime } from "../../lib/media";
 
 interface AudioRecordingBarProps {

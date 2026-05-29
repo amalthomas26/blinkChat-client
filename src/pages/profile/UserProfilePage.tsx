@@ -5,7 +5,7 @@ import {
   MessageSquare,
   ShieldBan,
   ShieldCheck,
-} from "lucide-react";
+} from "../../../components/ui/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/user.service";
 import { conversationService } from "../../services/conversation.service";

@@ -7,7 +7,7 @@ import {
   PhoneMissed,
   ArrowLeft,
   Loader2,
-} from "lucide-react";
+} from "../../components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import {
   callService,

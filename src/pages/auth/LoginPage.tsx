@@ -8,7 +8,7 @@ import { emailRegex, emailMessage } from "../../lib/validations";
 import type { LoginData } from "../../types/auth.types";
 import { ApiError } from "../../lib/api";
 import { useAuthActions, useAuthLoading } from "../../store/auth.selectors";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "../../components/ui/icons";
 
 type Step = "credentials" | "2fa";
 
@@ -212,7 +212,6 @@ export const LoginPage = () => {
   return (
     <AuthLayout title="Welcome to BlinkChat" subtitle="Sign in to continue">
       <form
-        // eslint-disable-next-line react-hooks/refs
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-4 flex flex-col"
       >

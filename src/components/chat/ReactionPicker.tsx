@@ -1,27 +1,22 @@
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
+import { lazy, Suspense } from "react";
 
-interface EmojiSelection {
-  native: string;
-}
-
-interface ReactionPickerProps {
+export interface ReactionPickerProps {
   onSelect: (emoji: string) => void;
   onClose: () => void;
 }
 
-export function ReactionPicker({ onSelect, onClose }: ReactionPickerProps) {
+const ReactionPickerImpl = lazy(() => import("./ReactionPickerImpl"));
+
+export function ReactionPicker(props: ReactionPickerProps) {
   return (
-    <div className="rounded-2xl border border-[#273244] bg-[#151b2b] shadow-2xl">
-      <Picker
-        data={data}
-        theme="dark"
-        previewPosition="none"
-        onEmojiSelect={(emoji: EmojiSelection) => {
-          onSelect(emoji.native);
-          onClose();
-        }}
-      />
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-[400px] w-[352px] items-center justify-center rounded-2xl border border-[#273244] bg-[#151b2b] shadow-2xl">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#8b5cf6] border-t-transparent" />
+        </div>
+      }
+    >
+      <ReactionPickerImpl {...props} />
+    </Suspense>
   );
 }

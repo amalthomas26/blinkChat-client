@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ArrowLeft, Camera, Loader2, Trash2, LogOut, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Trash2, LogOut, BadgeCheck } from "../../components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import { userService } from "../../services/user.service";

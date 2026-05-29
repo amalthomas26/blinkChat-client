@@ -1,4 +1,4 @@
-import { MessageSquareText, Settings } from "lucide-react";
+import { MessageSquareText, Settings } from "../ui/icons";
 import { NavLink } from "react-router-dom";
 import { useAuthUser } from "../../store/auth.selectors";
 import { cn } from "../../lib/utils";

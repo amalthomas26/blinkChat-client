@@ -4,7 +4,7 @@ import type { ConversationListItemDto } from "../../types";
 import { cn } from "../../lib/utils";
 import { useTypingUsers } from "../../store/conversation.selectors";
 import { useIsOnline } from "../../store/presence.selectors";
-import { Pin, BellOff } from "lucide-react";
+import { Pin, BellOff } from "../ui/icons";
 
 interface ConversationItemProps {
   conversation: ConversationListItemDto;

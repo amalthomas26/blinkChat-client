@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell } from "../../../components/ui/icons";
 import { SettingsSection } from "../../../components/ui/SettingsSection";
 import { SettingsToggle } from "../../../components/ui/SettingsToggle";
 import { userService } from "../../../services/user.service";

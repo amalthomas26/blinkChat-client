@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X } from "../ui/icons";
 
 interface ImageViewerProps {
   src: string | null;
