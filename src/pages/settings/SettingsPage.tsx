@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft } from "../../../components/ui/icons";
+import { ArrowLeft } from "../../components/ui/icons";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
 import { userService } from "../../services/user.service";

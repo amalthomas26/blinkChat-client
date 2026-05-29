@@ -13,7 +13,7 @@ import {
   X,
   Pencil,
   Check,
-} from "../../../components/ui/icons";
+} from "../../components/ui/icons";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
