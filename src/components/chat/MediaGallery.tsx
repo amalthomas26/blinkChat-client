@@ -3,7 +3,8 @@ import { X, Image as ImageIcon } from "../ui/icons";
 import { useMessageStore } from "../../store/message.store";
 import { useMessageIds } from "../../store/message.selectors";
 import { MessageType } from "../../types";
-import { ImageViewer } from "./ImageViewer";
+import { lazy, Suspense } from "react";
+const ImageViewer = lazy(() => import("./ImageViewer").then(m => ({ default: m.ImageViewer })));
 
 interface MediaGalleryProps {
   conversationId: string;
@@ -103,7 +104,9 @@ export function MediaGallery({ conversationId, onClose }: MediaGalleryProps) {
         </div>
       </div>
 
-      <ImageViewer src={viewerSrc} onClose={() => setViewerSrc(null)} />
+      <Suspense fallback={null}>
+        <ImageViewer src={viewerSrc} onClose={() => setViewerSrc(null)} />
+      </Suspense>
     </>
   );
 }

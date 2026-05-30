@@ -7,7 +7,8 @@ import { conversationService } from "../../services/conversation.service";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useConversationActions } from "../../store/conversation.selectors";
 import { ApiError } from "../../lib/api";
-import {CreateGroupModal} from "./CreateGroupModal"
+import { lazy, Suspense } from "react";
+const CreateGroupModal = lazy(() => import("./CreateGroupModal").then(m => ({ default: m.CreateGroupModal })));
 
 interface SearchPanelProps {
   open: boolean;
@@ -221,7 +222,9 @@ export function SearchPanel({ open, onClose }: SearchPanelProps) {
           </div>
         </div>
         {showCreateGroup && (
-          <CreateGroupModal onClose={() => setShowCreateGroup(false)} />
+          <Suspense fallback={null}>
+            <CreateGroupModal onClose={() => setShowCreateGroup(false)} />
+          </Suspense>
         )}
 
    

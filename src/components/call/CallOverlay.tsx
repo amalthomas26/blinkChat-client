@@ -12,8 +12,9 @@ import { useCallStore } from "../../store/call.store";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { useCallActions } from "../../hooks/useCallActions";
 import { useCallTimer, formatCallDuration } from "../../hooks/useCallTimer";
-import { VideoRenderer } from "./VideoRenderer";
-import { CallControls } from "./CallControls";
+import { lazy, Suspense } from "react";
+const VideoRenderer = lazy(() => import("./VideoRenderer").then(m => ({ default: m.VideoRenderer })));
+const CallControls = lazy(() => import("./CallControls").then(m => ({ default: m.CallControls })));
 import { ConnectionQualityBadge } from "./ConnectionQuality";
 import type {
   WebRTCOfferPayload,
@@ -148,24 +149,27 @@ export function CallOverlay() {
 
       {/* Main video area — fills remaining space */}
       <div className="relative flex flex-1 items-center justify-center">
-        <VideoRenderer
-          stream={remoteStream}
-          isVideoEnabled={isVideoCall && media.remoteVideoEnabled}
-          peerName={peerName ?? ""}
-          peerAvatar={peerAvatar ?? ""}
-          className="absolute inset-0"
-        />
+        <Suspense fallback={<div className="absolute inset-0 bg-black/50" />}>
+          <VideoRenderer
+            stream={remoteStream}
+            isVideoEnabled={isVideoCall && media.remoteVideoEnabled}
+            peerName={peerName ?? ""}
+            peerAvatar={peerAvatar ?? ""}
+            className="absolute inset-0"
+          />
+        </Suspense>
 
-        {/* Local video preview — smaller on mobile */}
         {isVideoCall && localStream ? (
           <div className="absolute bottom-20 right-3 z-10 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/10 shadow-xl sm:bottom-24 sm:right-4 sm:h-36 sm:w-24 md:bottom-28 md:right-6 md:h-48 md:w-36">
-            <VideoRenderer
-              stream={localStream}
-              isVideoEnabled={media.localVideoEnabled}
-              isMuted
-              isMirrored={media.isFrontCamera}
-              className="h-full w-full"
-            />
+            <Suspense fallback={<div className="h-full w-full bg-black/50" />}>
+              <VideoRenderer
+                stream={localStream}
+                isVideoEnabled={media.localVideoEnabled}
+                isMuted
+                isMirrored={media.isFrontCamera}
+                className="h-full w-full"
+              />
+            </Suspense>
           </div>
         ) : null}
 
@@ -203,19 +207,21 @@ export function CallOverlay() {
 
       {/* Controls bar at bottom */}
       <div className="shrink-0 bg-gradient-to-t from-black/60 to-transparent">
-        <CallControls
-          isAudioEnabled={media.localAudioEnabled}
-          isVideoEnabled={media.localVideoEnabled}
-          isSpeakerOn={media.isSpeakerOn}
-          isVideoCall={isVideoCall}
-          onToggleAudio={toggleAudio}
-          onToggleVideo={toggleVideo}
-          onToggleSpeaker={() => {
-            useCallStore.getState().toggleSpeaker();
-          }}
-          onSwitchCamera={switchCamera}
-          onEndCall={handleEndCall}
-        />
+        <Suspense fallback={<div className="h-20 w-full" />}>
+          <CallControls
+            isAudioEnabled={media.localAudioEnabled}
+            isVideoEnabled={media.localVideoEnabled}
+            isSpeakerOn={media.isSpeakerOn}
+            isVideoCall={isVideoCall}
+            onToggleAudio={toggleAudio}
+            onToggleVideo={toggleVideo}
+            onToggleSpeaker={() => {
+              useCallStore.getState().toggleSpeaker();
+            }}
+            onSwitchCamera={switchCamera}
+            onEndCall={handleEndCall}
+          />
+        </Suspense>
       </div>
     </div>
   );

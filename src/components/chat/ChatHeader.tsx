@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { ArrowLeft, MoreVertical, Phone, Video, History, Search, Image as ImageIcon } from "../ui/icons";
+import {
+  ArrowLeft,
+  MoreVertical,
+  Phone,
+  Video,
+  History,
+  Search,
+  Image as ImageIcon,
+} from "../ui/icons";
 import { Link, useNavigate } from "react-router-dom";
 import type { ConversationListItemDto } from "../../types";
 import { useIsOnline } from "../../store/presence.selectors";
@@ -63,42 +71,44 @@ export function ChatHeader({
   const navigate = useNavigate();
   const [showOptions, setShowOptions] = useState(false);
 
+  const avatarUrl =
+    conversation?.type === "direct"
+      ? conversation.peer?.avatar
+      : conversation?.groupAvatar;
+
   return (
-    <header className="flex h-20 shrink-0 items-center justify-between border-b border-[#273244] bg-[#101620] px-4 md:px-6">
-      <div className="flex min-w-0 items-center gap-4">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#273244] bg-[#101620] px-3 md:h-20 md:px-6">
+
+      {/* Left: back + avatar + name + subtitle */}
+      <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
         {isMobile ? (
           <Link
             to="/chat"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 hover:bg-white/5"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-300 hover:bg-white/5"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
         ) : null}
 
+        {/* Avatar */}
         <div className="relative shrink-0">
-          {(() => {
-            const avatarUrl =
-              conversation?.type === "direct"
-                ? conversation.peer?.avatar
-                : conversation?.groupAvatar;
-            return avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={name}
-                className="h-12 w-12 rounded-full border border-white/10 object-cover"
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd]">
-                {" "}
-                {initials}
-              </div>
-            );
-          })()}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={name}
+              className="h-9 w-9 rounded-full border border-white/10 object-cover md:h-12 md:w-12"
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2a2247] text-sm font-semibold text-[#c4b5fd] md:h-12 md:w-12">
+              {initials}
+            </div>
+          )}
           {isDirectOnline ? (
-            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[#101620] bg-[#10b981]" />
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#101620] bg-[#10b981] md:h-3.5 md:w-3.5" />
           ) : null}
         </div>
 
+        {/* Name + subtitle stacked */}
         <button
           type="button"
           onClick={() => {
@@ -110,30 +120,31 @@ export function ChatHeader({
           }}
           className="min-w-0 text-left"
         >
-          <p className="truncate text-lg font-semibold text-white">{name}</p>
-          <p className="truncate text-sm text-slate-400">{subtitle}</p>
+          <p className="truncate text-sm font-semibold text-white md:text-lg">{name}</p>
+          <p className="truncate text-xs text-slate-400 md:text-sm">{subtitle}</p>
         </button>
       </div>
 
-      <div className="flex items-center gap-2 text-slate-300">
+      {/* Right: action icons — compact on mobile */}
+      <div className="flex shrink-0 items-center gap-0 text-slate-300 md:gap-1">
         {onSearchOpen ? (
           <button
             type="button"
             onClick={onSearchOpen}
-            className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10"
+            className="rounded-xl p-1 transition hover:bg-white/10 md:p-2"
             title="Search messages"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         ) : null}
         {onMediaClick ? (
           <button
             type="button"
             onClick={onMediaClick}
-            className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10"
+            className="rounded-xl p-1 transition hover:bg-white/10 md:p-2"
             title="View media"
           >
-            <ImageIcon className="h-5 w-5" />
+            <ImageIcon className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         ) : null}
         {conversation?.type === "direct" && (
@@ -141,14 +152,15 @@ export function ChatHeader({
             <button
               type="button"
               onClick={() => navigate("/calls")}
-              className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10"
+              className="rounded-xl p-1 transition hover:bg-white/10 md:p-2"
               title="Call history"
             >
-              <History className="h-5 w-5" />
+              <History className="h-4 w-4 md:h-5 md:w-5" />
             </button>
             <button
               type="button"
-              className="rounded-xl p-2 hover:bg-white/5"
+              className="rounded-xl p-1 hover:bg-white/5 md:p-2"
+              title="Voice call"
               onClick={() => {
                 if (conversation?.peer) {
                   initiateCall(
@@ -160,11 +172,12 @@ export function ChatHeader({
                 }
               }}
             >
-              <Phone className="h-5 w-5" />
+              <Phone className="h-4 w-4 md:h-5 md:w-5" />
             </button>
             <button
               type="button"
-              className="rounded-xl p-2 hover:bg-white/5"
+              className="rounded-xl p-1 hover:bg-white/5 md:p-2"
+              title="Video call"
               onClick={() => {
                 if (conversation?.peer) {
                   initiateCall(
@@ -176,7 +189,7 @@ export function ChatHeader({
                 }
               }}
             >
-              <Video className="h-5 w-5" />
+              <Video className="h-4 w-4 md:h-5 md:w-5" />
             </button>
           </>
         )}
@@ -185,9 +198,9 @@ export function ChatHeader({
           <button
             type="button"
             onClick={() => setShowOptions((v) => !v)}
-            className="rounded-xl p-2 hover:bg-white/5"
+            className="rounded-xl p-1 hover:bg-white/5 md:p-2"
           >
-            <MoreVertical className="h-5 w-5" />
+            <MoreVertical className="h-4 w-4 md:h-5 md:w-5" />
           </button>
 
           {showOptions && conversation ? (

@@ -97,7 +97,7 @@ async function capBitrate(pc: RTCPeerConnection): Promise<void> {
 // Stable module-level reference — useCallStore.getState never changes between renders,
 // so placing it at module scope satisfies useCallback dependency arrays without
 // causing infinite re-renders.
-const getStore = useCallStore.getState;
+const getStore = () => useCallStore.getState();
 
 export function useWebRTC() {
   const pcRef = useRef<RTCPeerConnection | null>(null);

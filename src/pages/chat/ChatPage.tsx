@@ -11,7 +11,8 @@ import {
   MessageContextMenu,
   type MessageAction,
 } from "../../components/chat/MessageContextMenu";
-import { ForwardMessageDialog } from "../../components/chat/ForwardMessageDialog";
+import { lazy, Suspense } from "react";
+const ForwardMessageDialog = lazy(() => import("../../components/chat/ForwardMessageDialog").then(m => ({ default: m.ForwardMessageDialog })));
 import { useResponsive } from "../../hooks/useResponsive";
 import { useConversationRoom } from "../../hooks/useConversationRoom";
 import { useMessages } from "../../hooks/useMessages";
@@ -29,7 +30,7 @@ import { conversationService } from "../../services/conversation.service";
 import { socketService } from "../../services/socket.service";
 import { useConversationStore } from "../../store/conversation.store";
 import type { MessageDto, OptimisticMessageDto } from "../../types";
-import { ImageViewer } from "../../components/chat/ImageViewer";
+const ImageViewer = lazy(() => import("../../components/chat/ImageViewer").then(m => ({ default: m.ImageViewer })));
 import {useActiveConversationNotification} from "../../hooks/useActiveConversationNotification";
 
 
@@ -347,23 +348,25 @@ function ThreadShell({ conversationId }: ThreadShellProps) {
         />
       ) : null}
 
-      <ForwardMessageDialog
-        open={Boolean(forwardMessageId)}
-        onClose={() => setForwardMessageId(null)}
-        onSelectConversation={async (targetConversationId) => {
-          if (!forwardMessageId) return;
-          await messageService.forwardMessage({
-            sourceMessageId: forwardMessageId,
-            targetConversationId,
-          });
-          setForwardMessageId(null);
-        }}
-      />
+      <Suspense fallback={null}>
+        <ForwardMessageDialog
+          open={Boolean(forwardMessageId)}
+          onClose={() => setForwardMessageId(null)}
+          onSelectConversation={async (targetConversationId) => {
+            if (!forwardMessageId) return;
+            await messageService.forwardMessage({
+              sourceMessageId: forwardMessageId,
+              targetConversationId,
+            });
+            setForwardMessageId(null);
+          }}
+        />
 
-      <ImageViewer
-        src={viewerImageSrc}
-        onClose={() => setViewerImageSrc(null)}
-      />
+        <ImageViewer
+          src={viewerImageSrc}
+          onClose={() => setViewerImageSrc(null)}
+        />
+      </Suspense>
 
       {/* Delete chat confirmation */}
       {showDeleteConfirm && (

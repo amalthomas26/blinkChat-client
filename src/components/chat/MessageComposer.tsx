@@ -9,7 +9,8 @@ import { ReactionPicker } from "./ReactionPicker";
 import { useTypingIndicator } from "../../hooks/useTypingIndicator";
 import { getMessageTypeFromFile } from "../../lib/media";
 import { useAudioRecorder } from "../../hooks/useAudioRecorder";
-import { AudioRecordingBar } from "./AudioRecordingBar";
+import { lazy, Suspense } from "react";
+const AudioRecordingBar = lazy(() => import("./AudioRecordingBar").then(m => ({ default: m.AudioRecordingBar })));
 
 interface MessageComposerProps {
   conversationId: string;
@@ -203,11 +204,13 @@ export function MessageComposer({
 
       {isRecording ? (
         <div className="mb-3">
-          <AudioRecordingBar
-            elapsedSeconds={recorder.elapsedSeconds}
-            onCancel={recorder.cancel}
-            onSend={() => void sendVoiceNote()}
-          />
+          <Suspense fallback={<div className="h-11 w-full rounded-full bg-[#1d2635]" />}>
+            <AudioRecordingBar
+              elapsedSeconds={recorder.elapsedSeconds}
+              onCancel={recorder.cancel}
+              onSend={() => void sendVoiceNote()}
+            />
+          </Suspense>
         </div>
       ) : null}
 

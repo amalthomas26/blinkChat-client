@@ -14,8 +14,12 @@ import { CallOverlay } from "./components/call/CallOverlay";
 import { IncomingCallDialog } from "./components/call/IncomingCallDialog";
 import { useNotificationNavigation } from "./hooks/useNotificationNavigation";
 import { NotificationToaster } from "./components/notifications/NotificationToaster";
-import {SettingsPage} from "./pages/settings/SettingsPage";
 // Lazy-loaded pages
+const SettingsPage = lazy(() =>
+  import("./pages/settings/SettingsPage").then((m) => ({
+    default: m.SettingsPage,
+  })),
+);
 const LoginPage = lazy(() =>
   import("./pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
 );
