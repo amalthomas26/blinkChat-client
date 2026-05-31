@@ -31,6 +31,7 @@ dist-ssr
 # Environment and sensitive
 .env
 .env.*
+!.env.example
 
 # Documentation / plans / notes
 *.md
