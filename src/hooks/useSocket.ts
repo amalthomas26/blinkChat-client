@@ -54,6 +54,9 @@ function shouldDecrementUnreadCount(
   );
 }
 
+// In-flight guard to prevent duplicate parallel fetches when added to a new group
+const inFlightFetches = new Set<string>();
+
 export const useSocket = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -191,19 +194,46 @@ export const useSocket = () => {
       useConversationStore.getState().upsertConversation(conversation);
     };
 
-    const handleGroupMembersAdded = (payload: {
+    const handleGroupMembersAdded = async (payload: {
       conversationId: string;
       members: import("../types").ConversationListUserDto[];
     }) => {
       const store = useConversationStore.getState();
-      const conv = store.byId[payload.conversationId];
+      const currentUserId = useAuthStore.getState().user?.id;
+      
+      let conv = store.byId[payload.conversationId];
+      
+      // If the current user was added to a group but it's not in their store, 
+      // fetch it so it immediately appears in their conversation list.
+      if (!conv && currentUserId && payload.members.some(m => m.id === currentUserId)) {
+        if (inFlightFetches.has(payload.conversationId)) return;
+        
+        inFlightFetches.add(payload.conversationId);
+        try {
+          const response = await conversationService.getConversation(payload.conversationId);
+          useConversationStore.getState().upsertConversation(response.data);
+          conv = response.data;
+        } catch (err) {
+          console.error("Failed to fetch new group conversation", err);
+          return;
+        } finally {
+          inFlightFetches.delete(payload.conversationId);
+        }
+      }
+      
+      // If conversation is STILL not found (user wasn't added, just missed an event for an unknown conv), exit safely
       if (!conv) return;
-      const existingIds = new Set(conv.participants.map((p) => p.id));
+
+      const latestStore = useConversationStore.getState();
+      const latestConv = latestStore.byId[payload.conversationId];
+      if (!latestConv) return;
+      
+      const existingIds = new Set(latestConv.participants.map((p) => p.id));
       const merged = [
-        ...conv.participants,
+        ...latestConv.participants,
         ...payload.members.filter((m) => !existingIds.has(m.id)),
       ];
-      store.updateParticipants(payload.conversationId, merged);
+      latestStore.updateParticipants(payload.conversationId, merged);
     };
 
     const handleGroupMembersRemoved = (payload: {
@@ -211,15 +241,19 @@ export const useSocket = () => {
       removedUserIds: string[];
     }) => {
       const store = useConversationStore.getState();
-      const conv = store.byId[payload.conversationId];
-      if (!conv) return;
-      const removedSet = new Set(payload.removedUserIds);
       const currentUserId = useAuthStore.getState().user?.id;
+      const removedSet = new Set(payload.removedUserIds);
+      
       // If the current user was removed, drop the conversation entirely
       if (currentUserId && removedSet.has(currentUserId)) {
         store.removeConversation(payload.conversationId);
         return;
       }
+      
+      const conv = store.byId[payload.conversationId];
+      // If conversation not in store, ignore safely
+      if (!conv) return;
+      
       store.updateParticipants(
         payload.conversationId,
         conv.participants.filter((p) => !removedSet.has(p.id)),
@@ -239,8 +273,18 @@ export const useSocket = () => {
       newAdminId?: string;
     }) => {
       const store = useConversationStore.getState();
+      const currentUserId = useAuthStore.getState().user?.id;
+      
+      // If the current user left, drop the conversation entirely
+      if (currentUserId === payload.userId) {
+        store.removeConversation(payload.conversationId);
+        return;
+      }
+
       const conv = store.byId[payload.conversationId];
+      // If conversation not in store, ignore safely
       if (!conv) return;
+      
       let updated = conv.participants.filter((p) => p.id !== payload.userId);
       if (payload.newAdminId) {
         updated = updated.map((p) =>

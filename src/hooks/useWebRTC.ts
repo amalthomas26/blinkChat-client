@@ -149,7 +149,7 @@ export function useWebRTC() {
     const offer = await pc.createOffer({ iceRestart: true });
     await pc.setLocalDescription(offer);
     socket.emit("webrtc:offer", { callId, sdp: offer.sdp! });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, [getStore]);
 
   const createPC = useCallback(async (): Promise<RTCPeerConnection> => {
